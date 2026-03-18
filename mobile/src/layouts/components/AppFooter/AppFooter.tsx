@@ -1,32 +1,50 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { Pressable, View } from "react-native";
 import { styles } from "./AppFooter.styles";
 
+type NavRoute = {
+  path: "/home" | "/map" | "/compose" | "/blog" | "/profile";
+  icon: keyof typeof Ionicons.glyphMap;
+  isPrimary?: boolean;
+};
+
+const navRoutes: NavRoute[] = [
+  { path: "/home", icon: "home" },
+  { path: "/map", icon: "location-outline" },
+  { path: "/compose", icon: "add" , isPrimary: true },
+  { path: "/blog", icon: "newspaper-outline" },
+  { path: "/profile", icon: "person-outline" },
+];
+
 export function AppFooter() {
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <View style={styles.bottomBar}>
-      <Pressable style={styles.navItem} onPress={() => router.replace("/home")}>
-        <Ionicons name="home" size={22} color="#14342B" />
-      </Pressable>
+      {navRoutes.map((route) => {
+        const isActive = pathname === route.path;
+        const iconColor = route.isPrimary
+          ? "#FFFFFF"
+          : isActive
+            ? "#FFFFFF"
+            : "#14342B";
 
-      <Pressable style={styles.navItem} onPress={() => router.replace("/map")}>
-        <Ionicons name="location-outline" size={22} color="#14342B" />
-      </Pressable>
-
-      <Pressable style={styles.navItem}>
-        <Ionicons name="add-circle-outline" size={22} color="#14342B" />
-      </Pressable>
-
-      <Pressable style={styles.navItem}>
-        <Ionicons name="hand-left-outline" size={22} color="#14342B" />
-      </Pressable>
-
-      <Pressable style={styles.navItem}>
-        <Ionicons name="person-outline" size={22} color="#14342B" />
-      </Pressable>
+        return (
+          <Pressable
+            key={route.path}
+            style={[
+              styles.navItem,
+              isActive && styles.navItemActive,
+              route.isPrimary && styles.primaryNavItem,
+            ]}
+            onPress={() => router.replace(route.path)}
+          >
+            <Ionicons name={route.icon} size={22} color={iconColor} />
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

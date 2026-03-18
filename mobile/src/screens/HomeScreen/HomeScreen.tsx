@@ -25,7 +25,7 @@ export default function HomeScreen() {
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={18} color="#8A9490" />
           <TextInput
-            placeholder="BuscÃ¡ amigos"
+            placeholder="Buscar temática o recurso"
             placeholderTextColor="#8A9490"
             style={styles.searchInput}
           />
