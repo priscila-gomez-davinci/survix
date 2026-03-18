@@ -1,0 +1,11 @@
+{
+  "name": "survix",
+  "private": true,
+  "scripts": {
+    "mobile:start": "npm --prefix mobile run start",
+    "mobile:start:clear": "npm --prefix mobile run start -- --clear",
+    "mobile:android": "npm --prefix mobile run android",
+    "mobile:ios": "npm --prefix mobile run ios",
+    "mobile:web": "npm --prefix mobile run web"
+  }
+}
