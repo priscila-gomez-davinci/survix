@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { HomeItem } from "@/src/data/homeData";
 import { sectionStyles } from "./Section.styles";
@@ -10,11 +11,13 @@ type SectionProps = {
 };
 
 export function Section({ title, items, type }: SectionProps) {
+  const router = useRouter();
+
   return (
     <View style={sectionStyles.section}>
       <View style={sectionStyles.sectionHeader}>
         <Text style={sectionStyles.sectionTitle}>{title}</Text>
-        <Pressable>
+        <Pressable onPress={() => router.push({ pathname: "/list", params: { type } })}>
           <Text style={sectionStyles.seeMore}>Ver más</Text>
         </Pressable>
       </View>

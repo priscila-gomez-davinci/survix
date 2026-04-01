@@ -58,4 +58,10 @@ export const styles = StyleSheet.create({
   navItem: {
     padding: 6,
   },
+  emptyText: {
+    textAlign: "center",
+    color: "#8A9490",
+    fontSize: 14,
+    marginTop: 40,
+  },
 });

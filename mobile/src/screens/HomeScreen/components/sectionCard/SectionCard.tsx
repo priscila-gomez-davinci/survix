@@ -21,6 +21,9 @@ export function SectionCard({ item, type }: Props) {
         subtitle: item.subtitle,
         description: item.description,
         image: item.image,
+        purchaseLinks: item.purchaseLinks
+          ? JSON.stringify(item.purchaseLinks)
+          : undefined,
       },
     });
   };

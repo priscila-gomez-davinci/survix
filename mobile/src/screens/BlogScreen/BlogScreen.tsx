@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -8,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { mockPosts } from "@/src/data/blogData";
+import { usePostsContext } from "@/src/context/PostsContext";
 import { styles } from "./BlogScreen.styles";
 
 type Reaction = "like" | "dislike" | null;
@@ -22,43 +23,106 @@ type PostState = {
   draftComment: string;
 };
 
+const ALL_CATEGORIES = "Todos";
+const STORAGE_KEY = "@survix/post_states";
+
+type PersistedState = Record<string, {
+  reaction: Reaction;
+  likes: number;
+  dislikes: number;
+  comments: string[];
+}>;
+
+function makePostState(id: string, likes: number, dislikes: number, comments: string[]): PostState {
+  return { id, reaction: null, likes, dislikes, comments: [...comments], draftComment: "" };
+}
+
 export default function BlogScreen() {
-  const [posts, setPosts] = useState<PostState[]>(
-    mockPosts.map((post) => ({
-      id: post.id,
-      reaction: null,
-      likes: post.likes,
-      dislikes: post.dislikes,
-      comments: post.comments,
-      draftComment: "",
-    })),
+  const { posts: allPosts } = usePostsContext();
+  const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
+  const hasLoaded = useRef(false);
+
+  const [postStates, setPostStates] = useState<PostState[]>(() =>
+    allPosts.map((p) => makePostState(p.id, p.likes, p.dislikes, p.comments)),
+  );
+
+  // Load persisted reactions/likes/comments on mount
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
+      if (raw) {
+        try {
+          const saved: PersistedState = JSON.parse(raw);
+          setPostStates((current) =>
+            current.map((state) => {
+              const persisted = saved[state.id];
+              if (!persisted) return state;
+              return { ...state, ...persisted, draftComment: "" };
+            }),
+          );
+        } catch {
+          // ignore corrupt data
+        }
+      }
+      hasLoaded.current = true;
+    });
+  }, []);
+
+  // Save whenever postStates changes (skip until initial load is done)
+  useEffect(() => {
+    if (!hasLoaded.current) return;
+    const toSave: PersistedState = {};
+    for (const state of postStates) {
+      toSave[state.id] = {
+        reaction: state.reaction,
+        likes: state.likes,
+        dislikes: state.dislikes,
+        comments: state.comments,
+      };
+    }
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  }, [postStates]);
+
+  // Sync new posts added via ComposeScreen
+  useEffect(() => {
+    setPostStates((current) => {
+      const existingIds = new Set(current.map((s) => s.id));
+      const newEntries = allPosts
+        .filter((p) => !existingIds.has(p.id))
+        .map((p) => makePostState(p.id, p.likes, p.dislikes, p.comments));
+      return newEntries.length > 0 ? [...newEntries, ...current] : current;
+    });
+  }, [allPosts]);
+
+  const categories = useMemo(
+    () => [ALL_CATEGORIES, ...Array.from(new Set(allPosts.map((p) => p.category)))],
+    [allPosts],
+  );
+
+  const visiblePosts = useMemo(
+    () =>
+      activeCategory === ALL_CATEGORIES
+        ? allPosts
+        : allPosts.filter((p) => p.category === activeCategory),
+    [activeCategory, allPosts],
   );
 
   const communityPulse = useMemo(() => {
-    const totalLikes = posts.reduce((sum, post) => sum + post.likes, 0);
-    const totalComments = posts.reduce((sum, post) => sum + post.comments.length, 0);
-
+    const totalLikes = postStates.reduce((sum, post) => sum + post.likes, 0);
+    const totalComments = postStates.reduce((sum, post) => sum + post.comments.length, 0);
     return { totalLikes, totalComments };
-  }, [posts]);
+  }, [postStates]);
 
   const handleReaction = (postId: string, nextReaction: Exclude<Reaction, null>) => {
-    setPosts((current) =>
+    setPostStates((current) =>
       current.map((post) => {
-        if (post.id !== postId) {
-          return post;
-        }
+        if (post.id !== postId) return post;
 
         const alreadySelected = post.reaction === nextReaction;
         const baseLike = post.likes - (post.reaction === "like" ? 1 : 0);
         const baseDislike = post.dislikes - (post.reaction === "dislike" ? 1 : 0);
 
         if (alreadySelected) {
-          return {
-            ...post,
-            reaction: null,
-            likes: baseLike,
-            dislikes: baseDislike,
-          };
+          return { ...post, reaction: null, likes: baseLike, dislikes: baseDislike };
         }
 
         return {
@@ -72,7 +136,7 @@ export default function BlogScreen() {
   };
 
   const handleCommentDraft = (postId: string, value: string) => {
-    setPosts((current) =>
+    setPostStates((current) =>
       current.map((post) =>
         post.id === postId ? { ...post, draftComment: value } : post,
       ),
@@ -80,23 +144,12 @@ export default function BlogScreen() {
   };
 
   const handleAddComment = (postId: string) => {
-    setPosts((current) =>
+    setPostStates((current) =>
       current.map((post) => {
-        if (post.id !== postId) {
-          return post;
-        }
-
+        if (post.id !== postId) return post;
         const nextComment = post.draftComment.trim();
-
-        if (!nextComment) {
-          return post;
-        }
-
-        return {
-          ...post,
-          comments: [...post.comments, nextComment],
-          draftComment: "",
-        };
+        if (!nextComment) return post;
+        return { ...post, comments: [...post.comments, nextComment], draftComment: "" };
       }),
     );
   };
@@ -112,7 +165,7 @@ export default function BlogScreen() {
           <Text style={styles.heroEyebrow}>Blog de comunidad</Text>
           <Text style={styles.heroTitle}>Ideas practicas para sobrevivencia cotidiana</Text>
           <Text style={styles.heroText}>
-            Publicaciones simuladas para validar el flujo social antes de conectar un backend real.
+            Compartí tips, guías y consultas con la comunidad outdoor.
           </Text>
 
           <View style={styles.metricsRow}>
@@ -127,12 +180,29 @@ export default function BlogScreen() {
           </View>
         </View>
 
-        {mockPosts.map((post) => {
-          const state = posts.find((item) => item.id === post.id);
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {categories.map((cat) => (
+            <Pressable
+              key={cat}
+              style={[styles.filterChip, activeCategory === cat && styles.filterChipActive]}
+              onPress={() => setActiveCategory(cat)}
+            >
+              <Text
+                style={[styles.filterChipText, activeCategory === cat && styles.filterChipTextActive]}
+              >
+                {cat}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
 
-          if (!state) {
-            return null;
-          }
+        {visiblePosts.map((post) => {
+          const state = postStates.find((item) => item.id === post.id);
+          if (!state) return null;
 
           return (
             <View key={post.id} style={styles.postCard}>

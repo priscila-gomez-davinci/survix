@@ -56,6 +56,38 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
     color: "#303533",
   },
+  linksSection: {
+    marginTop: 10,
+  },
+  linksList: {
+    marginTop: 14,
+    gap: 12,
+  },
+  linkCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#DCE5E1",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  linkCopy: {
+    flex: 1,
+    marginRight: 12,
+  },
+  linkLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#14342B",
+    marginBottom: 4,
+  },
+  linkUrl: {
+    fontSize: 13,
+    color: "#6D7673",
+  },
   primaryButton: {
     marginTop: 26,
     backgroundColor: "#103D34",

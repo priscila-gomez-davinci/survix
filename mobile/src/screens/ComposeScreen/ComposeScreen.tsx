@@ -8,6 +8,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { usePostsContext } from "@/src/context/PostsContext";
 import { styles } from "./ComposeScreen.styles";
 
 type MessageType = "suggestion" | "question";
@@ -27,6 +29,8 @@ const initialState: MessageState = {
 };
 
 export default function ComposeScreen() {
+  const router = useRouter();
+  const { addPost } = usePostsContext();
   const [messageType, setMessageType] = useState<MessageType>("suggestion");
   const [form, setForm] = useState<MessageState>(initialState);
   const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
@@ -47,13 +51,20 @@ export default function ComposeScreen() {
       return;
     }
 
-    setSubmittedMessage(
-      messageType === "suggestion"
-        ? "Sugerencia enviada. Quedo guardada como mock para la proxima iteracion."
-        : "Consulta enviada. La comunidad podra responderla cuando conectemos el backend.",
-    );
+    addPost({
+      id: `post-${Date.now()}`,
+      author: "Priscila Torres",
+      role: messageType === "suggestion" ? "Sugerencia" : "Consulta",
+      title: form.title.trim(),
+      summary: form.body.trim(),
+      category: form.category.trim() || "General",
+      likes: 0,
+      dislikes: 0,
+      comments: [],
+    });
 
     setForm(initialState);
+    router.push("/blog");
   };
 
   return (
@@ -167,6 +178,7 @@ export default function ComposeScreen() {
               <Text style={styles.feedbackText}>{submittedMessage}</Text>
             </View>
           ) : null}
+
         </View>
       </ScrollView>
     </SafeAreaView>
