@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -9,52 +11,116 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { styles } from "./ProfileScreen.styles";
+import { useAuth } from "@/src/context/AuthContext";
+import { profilesApi, type Profile } from "@/src/services/api";
 
 type ProfileForm = {
   name: string;
+  surname: string;
   email: string;
-  city: string;
+  location: string;
   bio: string;
 };
 
-const initialProfile: ProfileForm = {
-  name: "Priscila Torres",
-  email: "priscila@survix.app",
-  city: "Buenos Aires, Argentina",
-  bio: "Aprendiendo supervivencia urbana, huerta y primeros auxilios con la comunidad.",
-};
+function profileToForm(profile: Profile | null, email: string): ProfileForm {
+  return {
+    name: profile?.name ?? "",
+    surname: profile?.surname ?? "",
+    email,
+    location: profile?.location ?? "",
+    bio: profile?.bio ?? "",
+  };
+}
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState(initialProfile);
-  const [draft, setDraft] = useState(initialProfile);
+  const { user, isAdmin, logout } = useAuth();
+
+  const [, setProfile] = useState<Profile | null>(null);
+  const [form, setForm] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
+  const [draft, setDraft] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
   const [isEditing, setIsEditing] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setIsFetching(true);
+    profilesApi
+      .getById(user.id_usuario)
+      .then((p) => {
+        setProfile(p);
+        const f = profileToForm(p, user.email);
+        setForm(f);
+        setDraft(f);
+      })
+      .catch(() => {
+        // Profile might not exist yet — start with empty form
+        const f = profileToForm(null, user.email);
+        setForm(f);
+        setDraft(f);
+      })
+      .finally(() => setIsFetching(false));
+  }, [user]);
 
   const completion = useMemo(() => {
-    const values = Object.values(profile);
-    const filled = values.filter((value) => value.trim().length > 0).length;
+    const values = [form.name, form.surname, form.email, form.location, form.bio];
+    const filled = values.filter((v) => v.trim().length > 0).length;
     return Math.round((filled / values.length) * 100);
-  }, [profile]);
+  }, [form]);
 
   const handleChange = (field: keyof ProfileForm, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
   };
 
-  const handleToggleEdit = () => {
+  const handleToggleEdit = async () => {
     if (isEditing) {
-      setProfile(draft);
+      if (!user) return;
+      setIsSaving(true);
+      try {
+        const updated = await profilesApi.update(user.id_usuario, {
+          name: draft.name || null,
+          surname: draft.surname || null,
+          bio: draft.bio || null,
+          location: draft.location || null,
+        });
+        setProfile(updated);
+        const f = profileToForm(updated, user.email);
+        setForm(f);
+        setDraft(f);
+        setIsEditing(false);
+      } catch {
+        Alert.alert("Error", "No se pudo guardar el perfil. Intentá de nuevo.");
+      } finally {
+        setIsSaving(false);
+      }
     } else {
-      setDraft(profile);
+      setDraft(form);
+      setIsEditing(true);
     }
-
-    setIsEditing((current) => !current);
   };
 
   const handleCancel = () => {
-    setDraft(profile);
+    setDraft(form);
     setIsEditing(false);
   };
 
-  const visibleProfile = isEditing ? draft : profile;
+  const handleLogout = () => {
+    Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Salir", style: "destructive", onPress: () => void logout() },
+    ]);
+  };
+
+  const visibleForm = isEditing ? draft : form;
+  const displayName = [form.name, form.surname].filter(Boolean).join(" ") || (user?.email ?? "");
+
+  if (isFetching) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color="#14342B" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -69,8 +135,10 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>{profile.name}</Text>
-            <Text style={styles.heroSubtitle}>Perfil editable de la comunidad</Text>
+            <Text style={styles.heroTitle}>{displayName}</Text>
+            <Text style={styles.heroSubtitle}>
+              {isAdmin ? "Administrador" : "Perfil de la comunidad"}
+            </Text>
           </View>
 
           <View style={styles.badge}>
@@ -87,18 +155,26 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
-            <Pressable style={styles.editButton} onPress={handleToggleEdit}>
-              <Text style={styles.editButtonText}>
-                {isEditing ? "Guardar" : "Editar"}
-              </Text>
+            <Pressable
+              style={[styles.editButton, isSaving && { opacity: 0.6 }]}
+              onPress={handleToggleEdit}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#14342B" />
+              ) : (
+                <Text style={styles.editButtonText}>
+                  {isEditing ? "Guardar" : "Editar"}
+                </Text>
+              )}
             </Pressable>
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Nombre y apellido</Text>
+            <Text style={styles.label}>Nombre</Text>
             <TextInput
-              value={visibleProfile.name}
-              onChangeText={(value) => handleChange("name", value)}
+              value={visibleForm.name}
+              onChangeText={(v) => handleChange("name", v)}
               editable={isEditing}
               style={[styles.input, !isEditing && styles.inputReadonly]}
               placeholder="Tu nombre"
@@ -107,24 +183,32 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Correo</Text>
+            <Text style={styles.label}>Apellido</Text>
             <TextInput
-              value={visibleProfile.email}
-              onChangeText={(value) => handleChange("email", value)}
+              value={visibleForm.surname}
+              onChangeText={(v) => handleChange("surname", v)}
               editable={isEditing}
               style={[styles.input, !isEditing && styles.inputReadonly]}
-              placeholder="correo@ejemplo.com"
+              placeholder="Tu apellido"
               placeholderTextColor="#8A9490"
-              keyboardType="email-address"
-              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Correo</Text>
+            <TextInput
+              value={visibleForm.email}
+              editable={false}
+              style={[styles.input, styles.inputReadonly]}
+              placeholderTextColor="#8A9490"
             />
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Ciudad</Text>
             <TextInput
-              value={visibleProfile.city}
-              onChangeText={(value) => handleChange("city", value)}
+              value={visibleForm.location}
+              onChangeText={(v) => handleChange("location", v)}
               editable={isEditing}
               style={[styles.input, !isEditing && styles.inputReadonly]}
               placeholder="Tu ciudad"
@@ -135,8 +219,8 @@ export default function ProfileScreen() {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Biografia</Text>
             <TextInput
-              value={visibleProfile.bio}
-              onChangeText={(value) => handleChange("bio", value)}
+              value={visibleForm.bio}
+              onChangeText={(v) => handleChange("bio", v)}
               editable={isEditing}
               style={[styles.textArea, !isEditing && styles.inputReadonly]}
               placeholder="Conta que sabes y que te interesa aprender"
@@ -146,27 +230,31 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {isEditing ? (
+          {isEditing && (
             <Pressable style={styles.secondaryButton} onPress={handleCancel}>
               <Text style={styles.secondaryButtonText}>Cancelar cambios</Text>
             </Pressable>
-          ) : null}
+          )}
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>—</Text>
             <Text style={styles.statLabel}>aportes</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>5</Text>
+            <Text style={styles.statValue}>—</Text>
             <Text style={styles.statLabel}>guias guardadas</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>3</Text>
+            <Text style={styles.statValue}>—</Text>
             <Text style={styles.statLabel}>consultas abiertas</Text>
           </View>
         </View>
+
+        <Pressable style={styles.secondaryButton} onPress={handleLogout}>
+          <Text style={styles.secondaryButtonText}>Cerrar sesión</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

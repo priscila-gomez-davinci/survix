@@ -10,8 +10,8 @@ import {
   View,
 } from "react-native";
 import MapView, { Callout, Marker } from "react-native-maps";
-import { activities } from "@/src/data/homeData";
 import { styles } from "./MapScreen.style";
+import { useHomeData } from "@/src/context/HomeDataContext";
 
 const BUENOS_AIRES = {
   latitude: -34.6037,
@@ -24,6 +24,8 @@ type LocationStatus = "loading" | "granted" | "denied";
 
 export default function MapScreen() {
   const router = useRouter();
+  const { activities } = useHomeData();
+
   const [region, setRegion] = useState(BUENOS_AIRES);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("loading");
 
@@ -58,6 +60,8 @@ export default function MapScreen() {
     });
   }, []);
 
+  const activitiesWithCoords = activities.filter((a) => a.coordinates);
+
   const handleCalloutPress = (activity: (typeof activities)[number]) => {
     router.push({
       pathname: "/detail",
@@ -87,25 +91,23 @@ export default function MapScreen() {
             showsUserLocation
             showsMyLocationButton={false}
           >
-            {activities
-              .filter((a) => a.coordinates)
-              .map((activity) => (
-                <Marker
-                  key={activity.id}
-                  coordinate={activity.coordinates!}
-                  onCalloutPress={() => handleCalloutPress(activity)}
-                >
-                  <View style={styles.markerPin}>
-                    <Ionicons name="leaf" size={14} color="#FFFFFF" />
-                  </View>
+            {activitiesWithCoords.map((activity) => (
+              <Marker
+                key={activity.id}
+                coordinate={activity.coordinates!}
+                onCalloutPress={() => handleCalloutPress(activity)}
+              >
+                <View style={styles.markerPin}>
+                  <Ionicons name="leaf" size={14} color="#FFFFFF" />
+                </View>
 
-                  <Callout style={styles.callout}>
-                    <Text style={styles.calloutTitle}>{activity.title}</Text>
-                    <Text style={styles.calloutSubtitle}>{activity.subtitle}</Text>
-                    <Text style={styles.calloutAction}>Ver detalle →</Text>
-                  </Callout>
-                </Marker>
-              ))}
+                <Callout style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{activity.title}</Text>
+                  <Text style={styles.calloutSubtitle}>{activity.subtitle}</Text>
+                  <Text style={styles.calloutAction}>Ver detalle →</Text>
+                </Callout>
+              </Marker>
+            ))}
           </MapView>
         )}
 

@@ -9,34 +9,33 @@ import {
   Text,
   TextInput,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
 import { styles } from "./RegisterScreen.style";
+import { useAuth } from "@/src/context/AuthContext";
+import { ApiError } from "@/src/services/api";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { register } = useAuth();
 
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    if (
-      !name.trim() ||
-      !email.trim() ||
-      !password.trim() ||
-      !confirmPassword.trim()
-    ) {
+  const handleRegister = async () => {
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert("Faltan datos", "Completá todos los campos.");
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       Alert.alert(
         "Contraseña inválida",
-        "La contraseña debe tener al menos 6 caracteres."
+        "La contraseña debe tener al menos 8 caracteres."
       );
       return;
     }
@@ -46,8 +45,23 @@ export default function RegisterScreen() {
       return;
     }
 
-    Alert.alert("Registro simulado", "Cuenta creada correctamente.");
-    router.replace("/login");
+    setLoading(true);
+    try {
+      await register(email.trim(), password);
+      router.replace("/home");
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 400 || error.status === 409) {
+          Alert.alert("Error", "Ya existe una cuenta con ese correo.");
+        } else {
+          Alert.alert("Error", "No se pudo crear la cuenta. Intentá de nuevo.");
+        }
+      } else {
+        Alert.alert("Error", "Ocurrió un error inesperado.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -79,15 +93,6 @@ export default function RegisterScreen() {
               </Text>
 
               <TextInput
-                placeholder="Nombre completo"
-                placeholderTextColor="#7A7A7A"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                style={styles.input}
-              />
-
-              <TextInput
                 placeholder="Correo electrónico"
                 placeholderTextColor="#7A7A7A"
                 value={email}
@@ -115,8 +120,16 @@ export default function RegisterScreen() {
                 style={styles.input}
               />
 
-              <Pressable style={styles.primaryButton} onPress={handleRegister}>
-                <Text style={styles.primaryButtonText}>Crear cuenta</Text>
+              <Pressable
+                style={[styles.primaryButton, loading && { opacity: 0.7 }]}
+                onPress={handleRegister}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Crear cuenta</Text>
+                )}
               </Pressable>
 
               <Link href="/login" asChild>

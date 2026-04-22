@@ -2,14 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import type { HomeItem } from "@/src/data/homeData";
-import { activities, equipment, guides } from "@/src/data/homeData";
 import { styles } from "./ListScreen.styles";
-
-const DATA_BY_TYPE: Record<string, HomeItem[]> = {
-  activity: activities,
-  guide: guides,
-  equipment: equipment,
-};
+import { useHomeData } from "@/src/context/HomeDataContext";
+import { useAuth } from "@/src/context/AuthContext";
 
 const TITLE_BY_TYPE: Record<string, string> = {
   activity: "Actividades",
@@ -20,6 +15,16 @@ const TITLE_BY_TYPE: Record<string, string> = {
 export default function ListScreen() {
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
+  const { activities, guides, equipment } = useHomeData();
+  const { isAdmin } = useAuth();
+
+  const canCreate = isAdmin && (type === "activity" || type === "guide");
+
+  const DATA_BY_TYPE: Record<string, HomeItem[]> = {
+    activity: activities,
+    guide: guides,
+    equipment,
+  };
 
   const items = DATA_BY_TYPE[type] ?? [];
   const title = TITLE_BY_TYPE[type] ?? "Contenido";
@@ -47,7 +52,15 @@ export default function ListScreen() {
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#14342B" />
         </Pressable>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <Text style={[styles.headerTitle, { flex: 1 }]}>{title}</Text>
+        {canCreate && (
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.push({ pathname: "/create", params: { type } })}
+          >
+            <Ionicons name="add" size={22} color="#14342B" />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView

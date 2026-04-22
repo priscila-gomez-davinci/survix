@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ImageBackground,
   SafeAreaView,
@@ -9,17 +9,24 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { styles } from "./SplashScreen.style";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { token, isLoading } = useAuth();
+  const [timerDone, setTimerDone] = useState(false);
 
+  // Start the splash timer immediately (always at least 2.2s)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace("/login");
-    }, 2200);
-
+    const timer = setTimeout(() => setTimerDone(true), 2200);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, []);
+
+  // Redirect when BOTH the timer is done AND auth has finished loading
+  useEffect(() => {
+    if (!timerDone || isLoading) return;
+    router.replace(token ? "/home" : "/login");
+  }, [timerDone, isLoading, token, router]);
 
   return (
     <ImageBackground

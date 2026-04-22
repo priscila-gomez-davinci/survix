@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   Text,
@@ -8,9 +9,9 @@ import {
   View,
 } from "react-native";
 import type { HomeItem } from "@/src/data/homeData";
-import { activities, equipment, guides } from "@/src/data/homeData";
 import { styles } from "./HomeScreen.styles";
 import { Section } from "./components/section/Section";
+import { useHomeData } from "@/src/context/HomeDataContext";
 
 function filterItems(items: HomeItem[], query: string): HomeItem[] {
   if (!query.trim()) return items;
@@ -25,6 +26,7 @@ function filterItems(items: HomeItem[], query: string): HomeItem[] {
 
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
+  const { activities, guides, equipment, isLoading, error, refresh } = useHomeData();
 
   const filteredActivities = filterItems(activities, query);
   const filteredGuides = filterItems(guides, query);
@@ -34,6 +36,28 @@ export default function HomeScreen() {
     filteredActivities.length > 0 ||
     filteredGuides.length > 0 ||
     filteredEquipment.length > 0;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color="#14342B" />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center", padding: 24 }]}>
+        <Text style={{ color: "#14342B", textAlign: "center", marginBottom: 16 }}>{error}</Text>
+        <Text
+          style={{ color: "#14342B", fontWeight: "600", textDecorationLine: "underline" }}
+          onPress={refresh}
+        >
+          Reintentar
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
