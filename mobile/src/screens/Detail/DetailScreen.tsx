@@ -25,7 +25,30 @@ type EditableFields = {
   title: string;
   description: string;
   subtitle: string;
+  distancia: string;
+  duracion: string;
 };
+
+type EditErrors = {
+  title?: string;
+  distancia?: string;
+  duracion?: string;
+};
+
+function parseSubtitle(
+  subtitle: string,
+  type: string
+): { distancia: string; duracion: string } {
+  if (type === "activity") {
+    const match = subtitle.match(/^([\d.]+)\s*km\s*[·-]\s*(\d+)\s*min/);
+    if (match) return { distancia: match[1], duracion: match[2] };
+  }
+  if (type === "guide") {
+    const match = subtitle.match(/^(\d+)\s*min/);
+    if (match) return { distancia: "", duracion: match[1] };
+  }
+  return { distancia: "", duracion: "" };
+}
 
 export default function DetailScreen() {
   const router = useRouter();
@@ -50,16 +73,20 @@ export default function DetailScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editErrors, setEditErrors] = useState<EditErrors>({});
 
+  const initialRouteFields = parseSubtitle(params.subtitle, params.type);
   const [draft, setDraft] = useState<EditableFields>({
     title: params.title,
     description: params.description,
     subtitle: params.subtitle,
+    ...initialRouteFields,
   });
   const [displayed, setDisplayed] = useState<EditableFields>({
     title: params.title,
     description: params.description,
     subtitle: params.subtitle,
+    ...initialRouteFields,
   });
 
   // ─── Favorites state ──────────────────────────────────────────────────────
@@ -120,34 +147,60 @@ export default function DetailScreen() {
   };
 
   const handleSave = async () => {
-    if (!draft.title.trim()) {
-      Alert.alert("Error", "El título no puede estar vacío.");
+    const errs: EditErrors = {};
+    if (!draft.title.trim()) errs.title = "El título no puede estar vacío.";
+    if (params.type === "activity") {
+      const dist = Number(draft.distancia);
+      const dur = Number(draft.duracion);
+      if (draft.distancia && (isNaN(dist) || dist <= 0)) errs.distancia = "Distancia inválida.";
+      if (draft.duracion && (isNaN(dur) || dur <= 0)) errs.duracion = "Duración inválida.";
+    }
+    if (Object.keys(errs).length > 0) {
+      setEditErrors(errs);
       return;
     }
+    setEditErrors({});
     setIsSaving(true);
     try {
       const id = Number(params.id);
       if (params.type === "activity") {
+        const dist = draft.distancia ? Number(draft.distancia) : undefined;
+        const dur = draft.duracion ? Number(draft.duracion) : undefined;
         await routesApi.update(id, {
           nombre: draft.title.trim(),
           descripcion: draft.description.trim() || undefined,
+          ...(dist ? { distancia_km: dist } : {}),
+          ...(dur ? { duracion_min: dur } : {}),
         });
+        const newSubtitle =
+          dist && dur ? `${dist} km · ${dur} min`
+          : dist ? `${dist} km`
+          : dur ? `${dur} min`
+          : draft.subtitle;
+        setDisplayed({ ...draft, subtitle: newSubtitle });
       } else {
+        const dur = draft.duracion ? Number(draft.duracion) : undefined;
+        if (dur !== undefined && (isNaN(dur) || dur <= 0)) {
+          setEditErrors({ duracion: "Duración inválida." });
+          setIsSaving(false);
+          return;
+        }
         await guidesApi.update(id, {
           titulo: draft.title.trim(),
           descripcion: draft.description.trim() || undefined,
+          ...(dur ? { duracion_min: dur } : {}),
         });
+        const newSubtitle = dur ? `${dur} min` : draft.subtitle;
+        setDisplayed({ ...draft, subtitle: newSubtitle });
       }
-      setDisplayed({ ...draft });
       setIsEditing(false);
       refresh();
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof ApiError && error.status === 403
+      setEditErrors({
+        title: error instanceof ApiError && error.status === 403
           ? "No tenés permiso para editar este contenido."
-          : "No se pudo guardar. Intentá de nuevo."
-      );
+          : "No se pudo guardar. Intentá de nuevo.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -258,25 +311,57 @@ export default function DetailScreen() {
           {/* ── Edit mode ── */}
           {isEditing ? (
             <>
-              <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>Título</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>Título *</Text>
               <TextInput
                 value={draft.title}
-                onChangeText={(v) => setDraft((d) => ({ ...d, title: v }))}
-                style={[styles.description, { borderWidth: 1, borderColor: "#C5D4CE", borderRadius: 8, padding: 10, marginBottom: 12 }]}
+                onChangeText={(v) => { setDraft((d) => ({ ...d, title: v })); setEditErrors((e) => ({ ...e, title: undefined })); }}
+                style={[styles.description, { borderWidth: 1, borderColor: editErrors.title ? "#D93025" : "#C5D4CE", borderRadius: 8, padding: 10, marginBottom: 4 }]}
                 placeholder="Título"
                 placeholderTextColor="#8A9490"
               />
+              {editErrors.title && <Text style={{ color: "#D93025", fontSize: 12, marginBottom: 8 }}>{editErrors.title}</Text>}
 
-              <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>Descripción</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 4, marginTop: 8 }]}>Descripción</Text>
               <TextInput
                 value={draft.description}
                 onChangeText={(v) => setDraft((d) => ({ ...d, description: v }))}
-                style={[styles.description, { borderWidth: 1, borderColor: "#C5D4CE", borderRadius: 8, padding: 10, minHeight: 100 }]}
+                style={[styles.description, { borderWidth: 1, borderColor: "#C5D4CE", borderRadius: 8, padding: 10, minHeight: 100, marginBottom: 12 }]}
                 placeholder="Descripción"
                 placeholderTextColor="#8A9490"
                 multiline
                 textAlignVertical="top"
               />
+
+              {(params.type === "activity" || params.type === "guide") && (
+                <View style={{ flexDirection: "row", gap: 10, marginBottom: 4 }}>
+                  {params.type === "activity" && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sectionTitle, { fontSize: 14, marginBottom: 4 }]}>Distancia (km)</Text>
+                      <TextInput
+                        value={draft.distancia}
+                        onChangeText={(v) => { setDraft((d) => ({ ...d, distancia: v })); setEditErrors((e) => ({ ...e, distancia: undefined })); }}
+                        style={[styles.description, { borderWidth: 1, borderColor: editErrors.distancia ? "#D93025" : "#C5D4CE", borderRadius: 8, padding: 10 }]}
+                        placeholder="5.5"
+                        placeholderTextColor="#8A9490"
+                        keyboardType="decimal-pad"
+                      />
+                      {editErrors.distancia && <Text style={{ color: "#D93025", fontSize: 12, marginTop: 2 }}>{editErrors.distancia}</Text>}
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sectionTitle, { fontSize: 14, marginBottom: 4 }]}>Duración (min)</Text>
+                    <TextInput
+                      value={draft.duracion}
+                      onChangeText={(v) => { setDraft((d) => ({ ...d, duracion: v })); setEditErrors((e) => ({ ...e, duracion: undefined })); }}
+                      style={[styles.description, { borderWidth: 1, borderColor: editErrors.duracion ? "#D93025" : "#C5D4CE", borderRadius: 8, padding: 10 }]}
+                      placeholder={params.type === "activity" ? "90" : "60"}
+                      placeholderTextColor="#8A9490"
+                      keyboardType="numeric"
+                    />
+                    {editErrors.duracion && <Text style={{ color: "#D93025", fontSize: 12, marginTop: 2 }}>{editErrors.duracion}</Text>}
+                  </View>
+                </View>
+              )}
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
                 <Pressable
@@ -291,7 +376,7 @@ export default function DetailScreen() {
                 </Pressable>
                 <Pressable
                   style={[styles.primaryButton, { flex: 1, backgroundColor: "#8A9490" }]}
-                  onPress={() => setIsEditing(false)}
+                  onPress={() => { setIsEditing(false); setEditErrors({}); }}
                   disabled={isSaving}
                 >
                   <Text style={styles.primaryButtonText}>Cancelar</Text>

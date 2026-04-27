@@ -68,6 +68,28 @@ export const styles = StyleSheet.create({
     color: "#14342B",
     fontSize: 15,
   },
+  inputError: {
+    borderColor: "#D93025",
+    backgroundColor: "#FFF5F5",
+  },
+  errorText: {
+    color: "#D93025",
+    fontSize: 12,
+    marginTop: 2,
+    marginLeft: 2,
+  },
+  sectionDivider: {
+    borderTopWidth: 1,
+    borderTopColor: "#E8EDEB",
+    paddingTop: 14,
+    marginTop: 4,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#8A9490",
+    marginBottom: 4,
+  },
   submitButton: {
     backgroundColor: "#14342B",
     borderRadius: 16,

@@ -62,6 +62,16 @@ export default function MapScreen() {
 
   const activitiesWithCoords = activities.filter((a) => a.coordinates);
 
+  const visibleActivities = activitiesWithCoords.filter((a) => {
+    const { latitude, longitude } = a.coordinates!;
+    return (
+      latitude >= region.latitude - region.latitudeDelta / 2 &&
+      latitude <= region.latitude + region.latitudeDelta / 2 &&
+      longitude >= region.longitude - region.longitudeDelta / 2 &&
+      longitude <= region.longitude + region.longitudeDelta / 2
+    );
+  });
+
   const handleCalloutPress = (activity: (typeof activities)[number]) => {
     router.push({
       pathname: "/detail",
@@ -88,10 +98,11 @@ export default function MapScreen() {
           <MapView
             style={styles.map}
             initialRegion={region}
+            onRegionChangeComplete={setRegion}
             showsUserLocation
             showsMyLocationButton={false}
           >
-            {activitiesWithCoords.map((activity) => (
+            {visibleActivities.map((activity) => (
               <Marker
                 key={activity.id}
                 coordinate={activity.coordinates!}

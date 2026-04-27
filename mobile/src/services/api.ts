@@ -268,6 +268,15 @@ export const routesApi = {
       body: JSON.stringify({ rating, comment }),
     }, true),
 
+  addPoint: (id: number, latitude: number, longitude: number, order = 1) =>
+    request<RoutePoint>(`/routes/${id}/points`, {
+      method: "POST",
+      body: JSON.stringify({
+        coordinates: `POINT(${longitude} ${latitude})`,
+        order,
+      }),
+    }, true),
+
   addFavorite: (id: number) =>
     request<void>(`/routes/${id}/favorite`, { method: "POST" }, true),
 

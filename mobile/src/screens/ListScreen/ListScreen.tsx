@@ -1,6 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import type { HomeItem } from "@/src/data/homeData";
 import { styles } from "./ListScreen.styles";
 import { useHomeData } from "@/src/context/HomeDataContext";
@@ -12,13 +21,30 @@ const TITLE_BY_TYPE: Record<string, string> = {
   equipment: "Equipamiento",
 };
 
+function parseSubtitleValues(subtitle: string) {
+  const distMatch = subtitle.match(/([\d.]+)\s*km/);
+  const durMatch = subtitle.match(/(\d+)\s*min/);
+  return {
+    distance: distMatch ? Number(distMatch[1]) : undefined,
+    duration: durMatch ? Number(durMatch[1]) : undefined,
+  };
+}
+
 export default function ListScreen() {
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
   const { activities, guides, equipment } = useHomeData();
   const { isAdmin } = useAuth();
 
+  const [search, setSearch] = useState("");
+  const [maxDistance, setMaxDistance] = useState("");
+  const [maxDuration, setMaxDuration] = useState("");
+  const [showExtraFilters, setShowExtraFilters] = useState(false);
+
   const canCreate = isAdmin && (type === "activity" || type === "guide");
+  const isActivity = type === "activity";
+  const showFilters = type === "activity" || type === "guide";
+  const hasActiveFilters = Boolean(search || maxDistance || maxDuration);
 
   const DATA_BY_TYPE: Record<string, HomeItem[]> = {
     activity: activities,
@@ -28,6 +54,22 @@ export default function ListScreen() {
 
   const items = DATA_BY_TYPE[type] ?? [];
   const title = TITLE_BY_TYPE[type] ?? "Contenido";
+
+  const filteredItems = items.filter((item) => {
+    if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (isActivity) {
+      const { distance, duration } = parseSubtitleValues(item.subtitle ?? "");
+      if (maxDistance && distance != null && distance > Number(maxDistance)) return false;
+      if (maxDuration && duration != null && duration > Number(maxDuration)) return false;
+    }
+    return true;
+  });
+
+  const clearFilters = () => {
+    setSearch("");
+    setMaxDistance("");
+    setMaxDuration("");
+  };
 
   const handleItemPress = (item: HomeItem) => {
     router.push({
@@ -53,6 +95,18 @@ export default function ListScreen() {
           <Ionicons name="arrow-back" size={22} color="#14342B" />
         </Pressable>
         <Text style={[styles.headerTitle, { flex: 1 }]}>{title}</Text>
+        {showFilters && (
+          <Pressable
+            style={[styles.backButton, hasActiveFilters && styles.filterButtonActive]}
+            onPress={() => setShowExtraFilters((v) => !v)}
+          >
+            <Ionicons
+              name={hasActiveFilters ? "options" : "options-outline"}
+              size={20}
+              color={hasActiveFilters ? "#FFFFFF" : "#14342B"}
+            />
+          </Pressable>
+        )}
         {canCreate && (
           <Pressable
             style={styles.backButton}
@@ -63,24 +117,98 @@ export default function ListScreen() {
         )}
       </View>
 
+      {showFilters && (
+        <View style={styles.filterPanel}>
+          <View style={styles.searchRow}>
+            <Ionicons name="search-outline" size={16} color="#8A9490" />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={`Buscar ${title.toLowerCase()}...`}
+              placeholderTextColor="#8A9490"
+              style={styles.searchInput}
+            />
+            {search ? (
+              <Pressable onPress={() => setSearch("")}>
+                <Ionicons name="close-circle" size={16} color="#8A9490" />
+              </Pressable>
+            ) : null}
+          </View>
+
+          {isActivity && showExtraFilters && (
+            <View style={styles.extraFilters}>
+              <View style={styles.filterField}>
+                <Text style={styles.filterLabel}>Distancia máx (km)</Text>
+                <TextInput
+                  value={maxDistance}
+                  onChangeText={setMaxDistance}
+                  placeholder="Ej: 10"
+                  placeholderTextColor="#8A9490"
+                  style={styles.filterInput}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.filterField}>
+                <Text style={styles.filterLabel}>Duración máx (min)</Text>
+                <TextInput
+                  value={maxDuration}
+                  onChangeText={setMaxDuration}
+                  placeholder="Ej: 120"
+                  placeholderTextColor="#8A9490"
+                  style={styles.filterInput}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          )}
+
+          {hasActiveFilters && (
+            <Pressable style={styles.clearRow} onPress={clearFilters}>
+              <Ionicons name="close-circle-outline" size={14} color="#10A95A" />
+              <Text style={styles.clearText}>Limpiar filtros</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {items.map((item) => (
-          <Pressable key={item.id} style={styles.card} onPress={() => handleItemPress(item)}>
-            <Image source={{ uri: item.image }} style={styles.cardImage} />
-            <View style={styles.cardContent}>
-              <Text style={styles.cardType}>{title.slice(0, -1)}</Text>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              {item.subtitle ? (
-                <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-              ) : null}
+        {filteredItems.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="search-outline" size={32} color="#8A9490" />
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#8A9490" />
-          </Pressable>
-        ))}
+            <Text style={styles.emptyTitle}>Sin resultados</Text>
+            <Text style={styles.emptyText}>
+              {hasActiveFilters
+                ? "Ningún resultado coincide con los filtros aplicados."
+                : "No hay contenido disponible aún."}
+            </Text>
+            {hasActiveFilters && (
+              <Pressable style={styles.emptyButton} onPress={clearFilters}>
+                <Text style={styles.emptyButtonText}>Limpiar filtros</Text>
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          filteredItems.map((item) => (
+            <Pressable key={item.id} style={styles.card} onPress={() => handleItemPress(item)}>
+              <Image source={{ uri: item.image }} style={styles.cardImage} />
+              <View style={styles.cardContent}>
+                <Text style={styles.cardType}>{title.slice(0, -1)}</Text>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                {item.subtitle ? (
+                  <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+                ) : null}
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#8A9490" />
+            </Pressable>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );

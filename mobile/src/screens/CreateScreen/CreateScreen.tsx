@@ -15,7 +15,42 @@ import { routesApi, guidesApi, ApiError } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles } from "./CreateScreen.styles";
 
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <Text style={styles.errorText}>{message}</Text>;
+}
+
+function Field({
+  label,
+  children,
+  error,
+  style,
+}: {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+  style?: object;
+}) {
+  return (
+    <View style={[styles.fieldGroup, style]}>
+      <Text style={styles.label}>{label}</Text>
+      {children}
+      <FieldError message={error} />
+    </View>
+  );
+}
+
 // ─── Guide form ───────────────────────────────────────────────────────────────
+
+type GuideErrors = {
+  titulo?: string;
+  duracion?: string;
+  idCategoria?: string;
+  idNivel?: string;
+  general?: string;
+};
 
 function GuideForm({ onSuccess }: { onSuccess: () => void }) {
   const { refresh } = useHomeData();
@@ -25,47 +60,48 @@ function GuideForm({ onSuccess }: { onSuccess: () => void }) {
   const [duracion, setDuracion] = useState("");
   const [idCategoria, setIdCategoria] = useState("");
   const [idNivel, setIdNivel] = useState("");
+  const [errors, setErrors] = useState<GuideErrors>({});
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!titulo.trim()) {
-      Alert.alert("Error", "El título es obligatorio.");
-      return;
-    }
-    const duracionNum = Number(duracion);
-    const catNum = Number(idCategoria);
-    const nivelNum = Number(idNivel);
-    if (!duracion || isNaN(duracionNum) || duracionNum <= 0) {
-      Alert.alert("Error", "Ingresá una duración válida (en minutos).");
-      return;
-    }
-    if (!idCategoria || isNaN(catNum)) {
-      Alert.alert("Error", "Ingresá el ID de categoría.");
-      return;
-    }
-    if (!idNivel || isNaN(nivelNum)) {
-      Alert.alert("Error", "Ingresá el ID de nivel de complejidad.");
-      return;
-    }
+  const clearField = (field: keyof GuideErrors) =>
+    setErrors((e) => ({ ...e, [field]: undefined }));
 
+  const validate = (): GuideErrors => {
+    const e: GuideErrors = {};
+    if (!titulo.trim()) e.titulo = "El título es obligatorio.";
+    const dur = Number(duracion);
+    if (!duracion || isNaN(dur) || dur <= 0) e.duracion = "Ingresá una duración válida (min).";
+    const cat = Number(idCategoria);
+    if (!idCategoria || isNaN(cat)) e.idCategoria = "Ingresá el ID de categoría.";
+    const niv = Number(idNivel);
+    if (!idNivel || isNaN(niv)) e.idNivel = "Ingresá el ID de nivel de complejidad.";
+    return e;
+  };
+
+  const handleSubmit = async () => {
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       await guidesApi.create({
         titulo: titulo.trim(),
         descripcion: descripcion.trim() || undefined,
-        duracion_min: duracionNum,
-        id_categoria_guias: catNum,
-        id_nivel_complejidad: nivelNum,
+        duracion_min: Number(duracion),
+        id_categoria_guias: Number(idCategoria),
+        id_nivel_complejidad: Number(idNivel),
       });
       refresh();
       onSuccess();
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof ApiError
+      setErrors({
+        general: error instanceof ApiError
           ? error.message
-          : "No se pudo crear la guía. Intentá de nuevo."
-      );
+          : "No se pudo crear la guía. Intentá de nuevo.",
+      });
     } finally {
       setLoading(false);
     }
@@ -73,20 +109,18 @@ function GuideForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <View style={styles.form}>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Título *</Text>
+      <Field label="Título *" error={errors.titulo}>
         <TextInput
           value={titulo}
-          onChangeText={setTitulo}
-          style={styles.input}
+          onChangeText={(v) => { setTitulo(v); clearField("titulo"); }}
+          style={[styles.input, errors.titulo && styles.inputError]}
           placeholder="Nombre de la guía"
           placeholderTextColor="#8A9490"
           maxLength={45}
         />
-      </View>
+      </Field>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Descripción</Text>
+      <Field label="Descripción">
         <TextInput
           value={descripcion}
           onChangeText={setDescripcion}
@@ -96,46 +130,47 @@ function GuideForm({ onSuccess }: { onSuccess: () => void }) {
           multiline
           textAlignVertical="top"
         />
-      </View>
+      </Field>
 
       <View style={styles.row}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>Duración (min) *</Text>
+        <Field label="Duración (min) *" error={errors.duracion} style={{ flex: 1 }}>
           <TextInput
             value={duracion}
-            onChangeText={setDuracion}
-            style={styles.input}
+            onChangeText={(v) => { setDuracion(v); clearField("duracion"); }}
+            style={[styles.input, errors.duracion && styles.inputError]}
             placeholder="60"
             placeholderTextColor="#8A9490"
             keyboardType="numeric"
           />
-        </View>
+        </Field>
       </View>
 
       <View style={styles.row}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>ID Categoría *</Text>
+        <Field label="ID Categoría *" error={errors.idCategoria} style={{ flex: 1 }}>
           <TextInput
             value={idCategoria}
-            onChangeText={setIdCategoria}
-            style={styles.input}
+            onChangeText={(v) => { setIdCategoria(v); clearField("idCategoria"); }}
+            style={[styles.input, errors.idCategoria && styles.inputError]}
             placeholder="1"
             placeholderTextColor="#8A9490"
             keyboardType="numeric"
           />
-        </View>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>ID Nivel *</Text>
+        </Field>
+        <Field label="ID Nivel *" error={errors.idNivel} style={{ flex: 1 }}>
           <TextInput
             value={idNivel}
-            onChangeText={setIdNivel}
-            style={styles.input}
+            onChangeText={(v) => { setIdNivel(v); clearField("idNivel"); }}
+            style={[styles.input, errors.idNivel && styles.inputError]}
             placeholder="1"
             placeholderTextColor="#8A9490"
             keyboardType="numeric"
           />
-        </View>
+        </Field>
       </View>
+
+      {errors.general && (
+        <Text style={[styles.errorText, { textAlign: "center" }]}>{errors.general}</Text>
+      )}
 
       <Pressable
         style={[styles.submitButton, loading && { opacity: 0.7 }]}
@@ -153,6 +188,18 @@ function GuideForm({ onSuccess }: { onSuccess: () => void }) {
 
 // ─── Route form ───────────────────────────────────────────────────────────────
 
+type RouteErrors = {
+  nombre?: string;
+  distancia?: string;
+  duracion?: string;
+  idActividad?: string;
+  idDificultad?: string;
+  idUbicacion?: string;
+  lat?: string;
+  lng?: string;
+  general?: string;
+};
+
 function RouteForm({ onSuccess }: { onSuccess: () => void }) {
   const { refresh } = useHomeData();
 
@@ -163,60 +210,70 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
   const [idActividad, setIdActividad] = useState("");
   const [idDificultad, setIdDificultad] = useState("");
   const [idUbicacion, setIdUbicacion] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [errors, setErrors] = useState<RouteErrors>({});
   const [loading, setLoading] = useState(false);
 
+  const clearField = (field: keyof RouteErrors) =>
+    setErrors((e) => ({ ...e, [field]: undefined }));
+
+  const validate = (): RouteErrors => {
+    const e: RouteErrors = {};
+    if (!nombre.trim()) e.nombre = "El nombre es obligatorio.";
+
+    const dist = Number(distancia);
+    if (!distancia || isNaN(dist) || dist <= 0) e.distancia = "Ingresá una distancia válida (km).";
+
+    const dur = Number(duracion);
+    if (!duracion || isNaN(dur) || dur <= 0) e.duracion = "Ingresá una duración válida (min).";
+
+    if (!idActividad || isNaN(Number(idActividad))) e.idActividad = "Requerido.";
+    if (!idDificultad || isNaN(Number(idDificultad))) e.idDificultad = "Requerido.";
+    if (!idUbicacion || isNaN(Number(idUbicacion))) e.idUbicacion = "Requerido.";
+
+    if (lat && (isNaN(Number(lat)) || Number(lat) < -90 || Number(lat) > 90))
+      e.lat = "Latitud inválida (-90 a 90).";
+    if (lng && (isNaN(Number(lng)) || Number(lng) < -180 || Number(lng) > 180))
+      e.lng = "Longitud inválida (-180 a 180).";
+
+    return e;
+  };
+
   const handleSubmit = async () => {
-    if (!nombre.trim()) {
-      Alert.alert("Error", "El nombre es obligatorio.");
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
-    const distNum = Number(distancia);
-    const durNum = Number(duracion);
-    const actNum = Number(idActividad);
-    const difNum = Number(idDificultad);
-    const ubNum = Number(idUbicacion);
-
-    if (!distancia || isNaN(distNum) || distNum <= 0) {
-      Alert.alert("Error", "Ingresá una distancia válida (en km).");
-      return;
-    }
-    if (!duracion || isNaN(durNum) || durNum <= 0) {
-      Alert.alert("Error", "Ingresá una duración válida (en minutos).");
-      return;
-    }
-    if (!idActividad || isNaN(actNum)) {
-      Alert.alert("Error", "Ingresá el ID de actividad.");
-      return;
-    }
-    if (!idDificultad || isNaN(difNum)) {
-      Alert.alert("Error", "Ingresá el ID de dificultad.");
-      return;
-    }
-    if (!idUbicacion || isNaN(ubNum)) {
-      Alert.alert("Error", "Ingresá el ID de ubicación.");
-      return;
-    }
-
+    setErrors({});
     setLoading(true);
     try {
-      await routesApi.create({
+      const route = await routesApi.create({
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || undefined,
-        distancia_km: distNum,
-        duracion_min: durNum,
-        id_actividad: actNum,
-        id_dificultad: difNum,
-        id_ubicacion: ubNum,
+        distancia_km: Number(distancia),
+        duracion_min: Number(duracion),
+        id_actividad: Number(idActividad),
+        id_dificultad: Number(idDificultad),
+        id_ubicacion: Number(idUbicacion),
       });
+
+      // If coordinates provided, add the point so it appears on the map
+      if (lat && lng) {
+        await routesApi.addPoint(route.id, Number(lat), Number(lng)).catch(() => {
+          // Non-critical: route was created, point is bonus
+        });
+      }
+
       refresh();
       onSuccess();
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof ApiError
+      setErrors({
+        general: error instanceof ApiError
           ? error.message
-          : "No se pudo crear la ruta. Intentá de nuevo."
-      );
+          : "No se pudo crear la ruta. Intentá de nuevo.",
+      });
     } finally {
       setLoading(false);
     }
@@ -224,20 +281,18 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <View style={styles.form}>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Nombre *</Text>
+      <Field label="Nombre *" error={errors.nombre}>
         <TextInput
           value={nombre}
-          onChangeText={setNombre}
-          style={styles.input}
+          onChangeText={(v) => { setNombre(v); clearField("nombre"); }}
+          style={[styles.input, errors.nombre && styles.inputError]}
           placeholder="Nombre de la ruta"
           placeholderTextColor="#8A9490"
           maxLength={150}
         />
-      </View>
+      </Field>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Descripción</Text>
+      <Field label="Descripción">
         <TextInput
           value={descripcion}
           onChangeText={setDescripcion}
@@ -247,69 +302,96 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
           multiline
           textAlignVertical="top"
         />
-      </View>
+      </Field>
 
       <View style={styles.row}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>Distancia (km) *</Text>
+        <Field label="Distancia (km) *" error={errors.distancia} style={{ flex: 1 }}>
           <TextInput
             value={distancia}
-            onChangeText={setDistancia}
-            style={styles.input}
+            onChangeText={(v) => { setDistancia(v); clearField("distancia"); }}
+            style={[styles.input, errors.distancia && styles.inputError]}
             placeholder="5.5"
             placeholderTextColor="#8A9490"
             keyboardType="decimal-pad"
           />
-        </View>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>Duración (min) *</Text>
+        </Field>
+        <Field label="Duración (min) *" error={errors.duracion} style={{ flex: 1 }}>
           <TextInput
             value={duracion}
-            onChangeText={setDuracion}
-            style={styles.input}
+            onChangeText={(v) => { setDuracion(v); clearField("duracion"); }}
+            style={[styles.input, errors.duracion && styles.inputError]}
             placeholder="90"
             placeholderTextColor="#8A9490"
             keyboardType="numeric"
           />
-        </View>
+        </Field>
       </View>
 
       <View style={styles.row}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>ID Actividad *</Text>
+        <Field label="ID Actividad *" error={errors.idActividad} style={{ flex: 1 }}>
           <TextInput
             value={idActividad}
-            onChangeText={setIdActividad}
-            style={styles.input}
+            onChangeText={(v) => { setIdActividad(v); clearField("idActividad"); }}
+            style={[styles.input, errors.idActividad && styles.inputError]}
             placeholder="1"
             placeholderTextColor="#8A9490"
             keyboardType="numeric"
           />
-        </View>
-        <View style={[styles.fieldGroup, { flex: 1 }]}>
-          <Text style={styles.label}>ID Dificultad *</Text>
+        </Field>
+        <Field label="ID Dificultad *" error={errors.idDificultad} style={{ flex: 1 }}>
           <TextInput
             value={idDificultad}
-            onChangeText={setIdDificultad}
-            style={styles.input}
+            onChangeText={(v) => { setIdDificultad(v); clearField("idDificultad"); }}
+            style={[styles.input, errors.idDificultad && styles.inputError]}
             placeholder="1"
             placeholderTextColor="#8A9490"
             keyboardType="numeric"
           />
-        </View>
+        </Field>
       </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>ID Ubicación *</Text>
+      <Field label="ID Ubicación *" error={errors.idUbicacion}>
         <TextInput
           value={idUbicacion}
-          onChangeText={setIdUbicacion}
-          style={styles.input}
+          onChangeText={(v) => { setIdUbicacion(v); clearField("idUbicacion"); }}
+          style={[styles.input, errors.idUbicacion && styles.inputError]}
           placeholder="1"
           placeholderTextColor="#8A9490"
           keyboardType="numeric"
         />
+      </Field>
+
+      {/* Coordenadas opcionales — necesarias para que aparezca en el mapa */}
+      <View style={styles.sectionDivider}>
+        <Text style={styles.sectionLabel}>Ubicación en el mapa (opcional)</Text>
       </View>
+
+      <View style={styles.row}>
+        <Field label="Latitud" error={errors.lat} style={{ flex: 1 }}>
+          <TextInput
+            value={lat}
+            onChangeText={(v) => { setLat(v); clearField("lat"); }}
+            style={[styles.input, errors.lat && styles.inputError]}
+            placeholder="-34.6037"
+            placeholderTextColor="#8A9490"
+            keyboardType="decimal-pad"
+          />
+        </Field>
+        <Field label="Longitud" error={errors.lng} style={{ flex: 1 }}>
+          <TextInput
+            value={lng}
+            onChangeText={(v) => { setLng(v); clearField("lng"); }}
+            style={[styles.input, errors.lng && styles.inputError]}
+            placeholder="-58.3816"
+            placeholderTextColor="#8A9490"
+            keyboardType="decimal-pad"
+          />
+        </Field>
+      </View>
+
+      {errors.general && (
+        <Text style={[styles.errorText, { textAlign: "center" }]}>{errors.general}</Text>
+      )}
 
       <Pressable
         style={[styles.submitButton, loading && { opacity: 0.7 }]}
