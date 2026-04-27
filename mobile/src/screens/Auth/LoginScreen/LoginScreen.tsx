@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -9,28 +9,87 @@ import {
   Text,
   TextInput,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
 import { styles } from "./LoginScreen.style";
 import { useAuth } from "@/src/context/AuthContext";
 import { ApiError } from "@/src/services/api";
 
+WebBrowser.maybeCompleteAuthSession();
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type Errors = {
+  email?: string;
+  password?: string;
+  general?: string;
+};
+
+function validate(email: string, password: string): Errors {
+  const errors: Errors = {};
+  if (!email.trim()) {
+    errors.email = "El correo es obligatorio.";
+  } else if (!EMAIL_REGEX.test(email.trim())) {
+    errors.email = "Ingresá un correo válido.";
+  }
+  if (!password) {
+    errors.password = "La contraseña es obligatoria.";
+  }
+  return errors;
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+  // ─── Google auth session ──────────────────────────────────────────────────
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: googleClientId,
+  });
+
+  useEffect(() => {
+    if (response?.type !== "success") return;
+    const token = response.authentication?.accessToken;
+    if (!token) return;
+
+    setGoogleLoading(true);
+    fetch("https://www.googleapis.com/userinfo/v2/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then(async (info: { id: string; email: string }) => {
+        await loginWithGoogle(info.id, info.email);
+        router.replace("/home");
+      })
+      .catch(() => {
+        setErrors({ general: "No se pudo iniciar sesión con Google." });
+      })
+      .finally(() => setGoogleLoading(false));
+  }, [response]);
+
+  // ─── Email login ──────────────────────────────────────────────────────────
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Faltan datos", "Completá el correo y la contraseña.");
+    const validationErrors = validate(email, password);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
-
+    setErrors({});
     setLoading(true);
     try {
       await login(email.trim(), password);
@@ -38,21 +97,19 @@ export default function LoginScreen() {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 401 || error.status === 400) {
-          Alert.alert("Error", "Correo o contraseña incorrectos.");
+          setErrors({ general: "Correo o contraseña incorrectos." });
         } else {
-          Alert.alert("Error", "No se pudo conectar al servidor. Intentá de nuevo.");
+          setErrors({ general: "No se pudo conectar al servidor. Intentá de nuevo." });
         }
       } else {
-        Alert.alert("Error", "Ocurrió un error inesperado.");
+        setErrors({ general: "Ocurrió un error inesperado." });
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    Alert.alert("Google", "Login con Google pendiente de integración.");
-  };
+  const anyLoading = loading || googleLoading;
 
   return (
     <ImageBackground
@@ -82,49 +139,74 @@ export default function LoginScreen() {
                 Accede a la comunidad y a tus actividades
               </Text>
 
+              {/* Correo */}
               <TextInput
                 placeholder="Correo electronico"
                 placeholderTextColor="#7A7A7A"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
-                onChangeText={setEmail}
-                style={styles.input}
+                onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined, general: undefined })); }}
+                style={[styles.input, errors.email ? styles.inputError : null]}
+                editable={!anyLoading}
               />
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
+              {/* Contraseña */}
               <TextInput
                 placeholder="Contrasena"
                 placeholderTextColor="#7A7A7A"
                 secureTextEntry
                 value={password}
-                onChangeText={setPassword}
-                style={styles.input}
+                onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined, general: undefined })); }}
+                style={[styles.input, errors.password ? styles.inputError : null]}
+                editable={!anyLoading}
               />
+              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
+              {/* Error general */}
+              {errors.general ? (
+                <Text style={[styles.errorText, { textAlign: "center", marginBottom: 4 }]}>
+                  {errors.general}
+                </Text>
+              ) : null}
+
+              {/* Botón iniciar sesión */}
               <Pressable
-                style={[styles.primaryButton, loading && { opacity: 0.7 }]}
+                style={[styles.primaryButton, anyLoading && { opacity: 0.7 }]}
                 onPress={handleLogin}
-                disabled={loading}
+                disabled={anyLoading}
               >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>Iniciar sesion</Text>
-                )}
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.primaryButtonText}>Iniciar sesion</Text>
+                }
               </Pressable>
 
+              {/* Botón Google */}
               <Pressable
-                style={styles.googleButton}
-                onPress={handleGoogleLogin}
+                style={[
+                  styles.googleButton,
+                  (!googleClientId || !request || anyLoading) && { opacity: 0.5 },
+                ]}
+                onPress={() => promptAsync()}
+                disabled={!googleClientId || !request || anyLoading}
               >
-                <Text style={styles.googleButtonText}>Seguir con Google</Text>
+                {googleLoading
+                  ? <ActivityIndicator color="#2457C5" />
+                  : <Text style={styles.googleButtonText}>Seguir con Google</Text>
+                }
               </Pressable>
+
+              {!googleClientId && (
+                <Text style={[styles.errorText, { textAlign: "center" }]}>
+                  Google auth no configurado (falta EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
+                </Text>
+              )}
 
               <Link href="/register" asChild>
-                <Pressable>
-                  <Text style={styles.linkText}>
-                    No tenes cuenta? Registrate
-                  </Text>
+                <Pressable disabled={anyLoading}>
+                  <Text style={styles.linkText}>No tenes cuenta? Registrate</Text>
                 </Pressable>
               </Link>
             </View>

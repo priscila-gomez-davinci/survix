@@ -81,6 +81,17 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
+  inputError: {
+    borderColor: "#D93025",
+    backgroundColor: "#FFF5F5",
+  },
+  errorText: {
+    color: "#D93025",
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
   googleButton: {
     height: 48,
     borderRadius: 12,

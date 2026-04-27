@@ -174,6 +174,12 @@ export const authApi = {
     }),
 
   me: () => request<User>("/auth/me", {}, true),
+
+  firebaseSync: (firebase_uid: string, email: string) =>
+    request<AuthResponse>("/auth/firebase-sync", {
+      method: "POST",
+      body: JSON.stringify({ firebase_uid, email }),
+    }),
 };
 
 // ─── Users ────────────────────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ type AuthContextValue = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (firebase_uid: string, email: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -81,6 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   };
 
+  const loginWithGoogle = async (firebase_uid: string, email: string) => {
+    const { access_token } = await authApi.firebaseSync(firebase_uid, email);
+    await setStoredToken(access_token);
+    setToken(access_token);
+    const me = await authApi.me();
+    setUser(me);
+  };
+
   const logout = async () => {
     await clearStoredToken();
     setToken(null);
@@ -91,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAdmin, isLoading, login, register, logout }}
+      value={{ user, token, isAdmin, isLoading, login, register, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>
