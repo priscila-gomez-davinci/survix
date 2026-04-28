@@ -1,3 +1,6 @@
+import { FirebaseError } from "firebase/app";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { firebaseAuth } from "@/src/services/firebase";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +19,6 @@ import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import { styles } from "./RegisterScreen.style";
 import { useAuth } from "@/src/context/AuthContext";
-import { ApiError } from "@/src/services/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -33,26 +35,37 @@ type Errors = {
 
 function validate(email: string, password: string, confirmPassword: string): Errors {
   const errors: Errors = {};
-
   if (!email.trim()) {
     errors.email = "El correo es obligatorio.";
   } else if (!EMAIL_REGEX.test(email.trim())) {
     errors.email = "Ingresá un correo válido.";
   }
-
   if (!password) {
     errors.password = "La contraseña es obligatoria.";
-  } else if (password.length < 8) {
-    errors.password = "Mínimo 8 caracteres.";
+  } else if (password.length < 6) {
+    errors.password = "Mínimo 6 caracteres.";
   }
-
   if (!confirmPassword) {
     errors.confirmPassword = "Confirmá tu contraseña.";
   } else if (password !== confirmPassword) {
     errors.confirmPassword = "Las contraseñas no coinciden.";
   }
-
   return errors;
+}
+
+function mapFirebaseError(error: FirebaseError): Errors {
+  switch (error.code) {
+    case "auth/email-already-in-use":
+      return { email: "Ya existe una cuenta con ese correo." };
+    case "auth/weak-password":
+      return { password: "La contraseña debe tener al menos 6 caracteres." };
+    case "auth/invalid-email":
+      return { email: "Correo inválido." };
+    case "auth/too-many-requests":
+      return { general: "Demasiados intentos. Intentá más tarde." };
+    default:
+      return { general: "No se pudo crear la cuenta. Intentá de nuevo." };
+  }
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -77,22 +90,31 @@ export default function RegisterScreen() {
 
   useEffect(() => {
     if (response?.type !== "success") return;
-    const token = response.authentication?.accessToken;
-    if (!token) return;
+    const { idToken, accessToken } = response.authentication ?? {};
+    if (!accessToken) return;
 
     setGoogleLoading(true);
-    fetch("https://www.googleapis.com/userinfo/v2/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then(async (info: { id: string; email: string }) => {
-        await loginWithGoogle(info.id, info.email);
+    (async () => {
+      try {
+        if (idToken) {
+          // Sign into Firebase with the Google credential to get a real Firebase UID
+          const credential = GoogleAuthProvider.credential(idToken, accessToken);
+          const { user } = await signInWithCredential(firebaseAuth, credential);
+          await loginWithGoogle(user.uid, user.email ?? "");
+        } else {
+          // Fallback: fetch Google user info manually
+          const info = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }).then((r) => r.json()) as { id: string; email: string };
+          await loginWithGoogle(info.id, info.email);
+        }
         router.replace("/home");
-      })
-      .catch(() => {
+      } catch {
         setErrors({ general: "No se pudo completar el registro con Google." });
-      })
-      .finally(() => setGoogleLoading(false));
+      } finally {
+        setGoogleLoading(false);
+      }
+    })();
   }, [response]);
 
   // ─── Email register ───────────────────────────────────────────────────────
@@ -108,15 +130,11 @@ export default function RegisterScreen() {
       await register(email.trim(), password);
       router.replace("/home");
     } catch (error) {
-      if (error instanceof ApiError) {
-        if (error.status === 400 || error.status === 409) {
-          setErrors({ email: "Ya existe una cuenta con ese correo." });
-        } else {
-          setErrors({ general: "No se pudo crear la cuenta. Intentá de nuevo." });
-        }
-      } else {
-        setErrors({ general: "Ocurrió un error inesperado." });
-      }
+      setErrors(
+        error instanceof FirebaseError
+          ? mapFirebaseError(error)
+          : { general: "Ocurrió un error inesperado." },
+      );
     } finally {
       setLoading(false);
     }
@@ -152,7 +170,6 @@ export default function RegisterScreen() {
                 Unite a la comunidad y accedé a tus actividades
               </Text>
 
-              {/* Correo */}
               <TextInput
                 placeholder="Correo electrónico"
                 placeholderTextColor="#7A7A7A"
@@ -165,7 +182,6 @@ export default function RegisterScreen() {
               />
               {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-              {/* Contraseña */}
               <TextInput
                 placeholder="Contraseña"
                 placeholderTextColor="#7A7A7A"
@@ -177,7 +193,6 @@ export default function RegisterScreen() {
               />
               {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
-              {/* Confirmar contraseña */}
               <TextInput
                 placeholder="Confirmar contraseña"
                 placeholderTextColor="#7A7A7A"
@@ -189,14 +204,12 @@ export default function RegisterScreen() {
               />
               {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
 
-              {/* Error general */}
               {errors.general ? (
                 <Text style={[styles.errorText, { textAlign: "center", marginBottom: 4 }]}>
                   {errors.general}
                 </Text>
               ) : null}
 
-              {/* Botón crear cuenta */}
               <Pressable
                 style={[styles.primaryButton, anyLoading && { opacity: 0.7 }]}
                 onPress={handleRegister}
@@ -208,7 +221,6 @@ export default function RegisterScreen() {
                 }
               </Pressable>
 
-              {/* Botón Google */}
               <Pressable
                 style={[
                   styles.googleButton,

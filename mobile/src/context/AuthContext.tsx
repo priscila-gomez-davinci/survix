@@ -6,6 +6,12 @@ import {
   type ReactNode,
 } from "react";
 import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import { firebaseAuth } from "@/src/services/firebase";
+import {
   authApi,
   setStoredToken,
   clearStoredToken,
@@ -58,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(me);
         }
       } catch {
-        // Token expired or invalid — start fresh
         await clearStoredToken();
       } finally {
         setIsLoading(false);
@@ -66,16 +71,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const { access_token } = await authApi.login(email, password);
+  // All email/password flows go through Firebase first to get a real firebase_uid,
+  // then sync that uid with the backend via /auth/firebase-sync.
+
+  const register = async (email: string, password: string) => {
+    const { user: fbUser } = await createUserWithEmailAndPassword(
+      firebaseAuth,
+      email,
+      password,
+    );
+    const { access_token } = await authApi.firebaseSync(
+      fbUser.uid,
+      fbUser.email ?? email,
+    );
     await setStoredToken(access_token);
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
   };
 
-  const register = async (email: string, password: string) => {
-    const { access_token } = await authApi.register(email, password);
+  const login = async (email: string, password: string) => {
+    const { user: fbUser } = await signInWithEmailAndPassword(
+      firebaseAuth,
+      email,
+      password,
+    );
+    const { access_token } = await authApi.firebaseSync(
+      fbUser.uid,
+      fbUser.email ?? email,
+    );
     await setStoredToken(access_token);
     setToken(access_token);
     const me = await authApi.me();
@@ -91,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    await signOut(firebaseAuth).catch(() => {});
     await clearStoredToken();
     setToken(null);
     setUser(null);

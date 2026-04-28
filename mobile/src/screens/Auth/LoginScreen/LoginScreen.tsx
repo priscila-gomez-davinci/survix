@@ -1,3 +1,6 @@
+import { FirebaseError } from "firebase/app";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { firebaseAuth } from "@/src/services/firebase";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +19,6 @@ import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import { styles } from "./LoginScreen.style";
 import { useAuth } from "@/src/context/AuthContext";
-import { ApiError } from "@/src/services/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -43,6 +45,23 @@ function validate(email: string, password: string): Errors {
   return errors;
 }
 
+function mapFirebaseError(error: FirebaseError): Errors {
+  switch (error.code) {
+    case "auth/invalid-credential":
+    case "auth/user-not-found":
+    case "auth/wrong-password":
+      return { general: "Correo o contraseña incorrectos." };
+    case "auth/invalid-email":
+      return { email: "Correo inválido." };
+    case "auth/user-disabled":
+      return { general: "Esta cuenta fue deshabilitada." };
+    case "auth/too-many-requests":
+      return { general: "Demasiados intentos. Intentá más tarde." };
+    default:
+      return { general: "No se pudo iniciar sesión. Intentá de nuevo." };
+  }
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LoginScreen() {
@@ -64,22 +83,31 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (response?.type !== "success") return;
-    const token = response.authentication?.accessToken;
-    if (!token) return;
+    const { idToken, accessToken } = response.authentication ?? {};
+    if (!accessToken) return;
 
     setGoogleLoading(true);
-    fetch("https://www.googleapis.com/userinfo/v2/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then(async (info: { id: string; email: string }) => {
-        await loginWithGoogle(info.id, info.email);
+    (async () => {
+      try {
+        if (idToken) {
+          // Sign into Firebase with the Google credential to get a real Firebase UID
+          const credential = GoogleAuthProvider.credential(idToken, accessToken);
+          const { user } = await signInWithCredential(firebaseAuth, credential);
+          await loginWithGoogle(user.uid, user.email ?? "");
+        } else {
+          // Fallback: fetch Google user info manually
+          const info = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }).then((r) => r.json()) as { id: string; email: string };
+          await loginWithGoogle(info.id, info.email);
+        }
         router.replace("/home");
-      })
-      .catch(() => {
+      } catch {
         setErrors({ general: "No se pudo iniciar sesión con Google." });
-      })
-      .finally(() => setGoogleLoading(false));
+      } finally {
+        setGoogleLoading(false);
+      }
+    })();
   }, [response]);
 
   // ─── Email login ──────────────────────────────────────────────────────────
@@ -95,15 +123,11 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace("/home");
     } catch (error) {
-      if (error instanceof ApiError) {
-        if (error.status === 401 || error.status === 400) {
-          setErrors({ general: "Correo o contraseña incorrectos." });
-        } else {
-          setErrors({ general: "No se pudo conectar al servidor. Intentá de nuevo." });
-        }
-      } else {
-        setErrors({ general: "Ocurrió un error inesperado." });
-      }
+      setErrors(
+        error instanceof FirebaseError
+          ? mapFirebaseError(error)
+          : { general: "Ocurrió un error inesperado." },
+      );
     } finally {
       setLoading(false);
     }
@@ -139,7 +163,6 @@ export default function LoginScreen() {
                 Accede a la comunidad y a tus actividades
               </Text>
 
-              {/* Correo */}
               <TextInput
                 placeholder="Correo electronico"
                 placeholderTextColor="#7A7A7A"
@@ -152,7 +175,6 @@ export default function LoginScreen() {
               />
               {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-              {/* Contraseña */}
               <TextInput
                 placeholder="Contrasena"
                 placeholderTextColor="#7A7A7A"
@@ -164,14 +186,12 @@ export default function LoginScreen() {
               />
               {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
-              {/* Error general */}
               {errors.general ? (
                 <Text style={[styles.errorText, { textAlign: "center", marginBottom: 4 }]}>
                   {errors.general}
                 </Text>
               ) : null}
 
-              {/* Botón iniciar sesión */}
               <Pressable
                 style={[styles.primaryButton, anyLoading && { opacity: 0.7 }]}
                 onPress={handleLogin}
@@ -183,7 +203,6 @@ export default function LoginScreen() {
                 }
               </Pressable>
 
-              {/* Botón Google */}
               <Pressable
                 style={[
                   styles.googleButton,
