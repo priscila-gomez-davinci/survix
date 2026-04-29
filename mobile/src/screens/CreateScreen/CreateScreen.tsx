@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 import { routesApi, guidesApi, ApiError } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
+import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./CreateScreen.styles";
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -412,9 +414,27 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
 export default function CreateScreen() {
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
+  const { isAdmin } = useAuth();
 
   const isGuide = type === "guide";
   const title = isGuide ? "Nueva guía" : "Nueva ruta";
+
+  if (!isAdmin || Platform.OS !== "web") {
+    const message = !isAdmin
+      ? "Acceso restringido a administradores"
+      : "Esta función solo está disponible en la versión web.";
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <Ionicons name={!isAdmin ? "lock-closed-outline" : "desktop-outline"} size={44} color="#8A9490" />
+        <Text style={[styles.headerTitle, { marginTop: 16, color: "#8A9490", fontSize: 16, textAlign: "center", paddingHorizontal: 24 }]}>
+          {message}
+        </Text>
+        <Pressable style={[styles.backButton, { marginTop: 24, width: "auto", paddingHorizontal: 20 }]} onPress={() => router.back()}>
+          <Text style={{ color: "#14342B", fontWeight: "700" }}>Volver</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   const handleSuccess = () => {
     Alert.alert("Listo", `${isGuide ? "Guía" : "Ruta"} creada correctamente.`, [

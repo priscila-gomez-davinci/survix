@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -41,7 +42,7 @@ export default function ListScreen() {
   const [maxDuration, setMaxDuration] = useState("");
   const [showExtraFilters, setShowExtraFilters] = useState(false);
 
-  const canCreate = isAdmin && (type === "activity" || type === "guide");
+  const canCreate = isAdmin && Platform.OS === "web" && (type === "activity" || type === "guide");
   const isActivity = type === "activity";
   const showFilters = type === "activity" || type === "guide";
   const hasActiveFilters = Boolean(search || maxDistance || maxDuration);

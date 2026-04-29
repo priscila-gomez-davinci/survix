@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -287,7 +288,7 @@ export default function DetailScreen() {
             <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
           </Pressable>
 
-          {isAdmin && isBackendItem && !isEditing && (
+          {isAdmin && isBackendItem && !isEditing && Platform.OS === "web" && (
             <View style={{ position: "absolute", top: 16, right: 16, flexDirection: "row", gap: 8 }}>
               <Pressable
                 style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 8, padding: 8 }}

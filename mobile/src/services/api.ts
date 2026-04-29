@@ -158,6 +158,12 @@ export type GuideCreateRequest = {
   id_nivel_complejidad: number;
 };
 
+export type GuideStepRequest = {
+  titulo: string;
+  descripcion: string;
+  orden: number;
+};
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -268,6 +274,9 @@ export const routesApi = {
       body: JSON.stringify({ rating, comment }),
     }, true),
 
+  getPoints: (id: number) =>
+    request<RoutePoint[]>(`/routes/${id}/points`),
+
   addPoint: (id: number, latitude: number, longitude: number, order = 1) =>
     request<RoutePoint>(`/routes/${id}/points`, {
       method: "POST",
@@ -276,6 +285,21 @@ export const routesApi = {
         order,
       }),
     }, true),
+
+  updatePoint: (pointId: number, latitude: number, longitude: number, order: number) =>
+    request<RoutePoint>(`/routes/points/${pointId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        coordinates: `POINT(${longitude} ${latitude})`,
+        order,
+      }),
+    }, true),
+
+  deletePoint: (pointId: number) =>
+    request<void>(`/routes/points/${pointId}`, { method: "DELETE" }, true),
+
+  download: (id: number) =>
+    request<void>(`/routes/${id}/download`, { method: "POST" }, true),
 
   addFavorite: (id: number) =>
     request<void>(`/routes/${id}/favorite`, { method: "POST" }, true),
@@ -325,6 +349,24 @@ export const guidesApi = {
 
   getProducts: (id: number) =>
     request<GuideProduct[]>(`/guides/${id}/products`),
+
+  addStep: (id: number, step: GuideStepRequest) =>
+    request<GuideStep>(`/guides/${id}/steps`, {
+      method: "POST",
+      body: JSON.stringify(step),
+    }, true),
+
+  updateStep: (stepId: number, step: Partial<GuideStepRequest>) =>
+    request<GuideStep>(`/guides/steps/${stepId}`, {
+      method: "PUT",
+      body: JSON.stringify(step),
+    }, true),
+
+  deleteStep: (stepId: number) =>
+    request<void>(`/guides/steps/${stepId}`, { method: "DELETE" }, true),
+
+  download: (id: number) =>
+    request<void>(`/guides/${id}/download`, { method: "POST" }, true),
 
   addProduct: (id: number, product: { name: string; url?: string; image_url?: string }) =>
     request<GuideProduct>(`/guides/${id}/products`, {
