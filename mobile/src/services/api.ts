@@ -54,7 +54,14 @@ async function request<T>(
       _onUnauthorized?.();
     }
     const error = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, error?.detail ?? "Error del servidor");
+    const detail = error?.detail;
+    const message =
+      typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+        ? detail.map((d: { msg?: string }) => d.msg ?? "error").join("; ")
+        : "Error del servidor";
+    throw new ApiError(response.status, message);
   }
 
   if (response.status === 204) return undefined as T;
@@ -85,13 +92,14 @@ export type User = {
 };
 
 export type Profile = {
+  id_perfil_usuario: number;
   id_usuario: number;
-  name: string | null;
-  surname: string | null;
-  photo_url: string | null;
-  bio: string | null;
-  location: string | null;
-  birthdate: string | null;
+  nombre: string;
+  apellido: string;
+  foto_url: string;
+  bio: string;
+  ubicacion: string;
+  fecha_nacimiento: string;
 };
 
 export type Route = {
@@ -218,7 +226,7 @@ export const profilesApi = {
   getById: (userId: number) =>
     request<Profile>(`/profiles/${userId}`, {}, true),
 
-  update: (userId: number, data: Partial<Omit<Profile, "id_usuario">>) =>
+  update: (userId: number, data: Partial<Omit<Profile, "id_perfil_usuario" | "id_usuario">>) =>
     request<Profile>(`/profiles/${userId}`, {
       method: "PUT",
       body: JSON.stringify(data),

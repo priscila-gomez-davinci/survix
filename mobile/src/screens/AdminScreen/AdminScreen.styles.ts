@@ -392,6 +392,7 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 40,
     elevation: 20,
+    overflow: "visible" as never,
   },
   modalTitle: {
     fontSize: 17,

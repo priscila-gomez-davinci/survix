@@ -11,6 +11,7 @@ import {
 import { routesApi, ApiError, type Route, type RoutePoint } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles, C } from "../AdminScreen.styles";
+import { DeleteModal } from "../DeleteModal";
 
 // ─── Catalog options (fetched from server data + reasonable defaults) ─────────
 
@@ -453,6 +454,7 @@ export function RoutesTab() {
   const [showModal, setShowModal] = useState<"create" | number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ label: string; onConfirm: () => void } | null>(null);
 
   const locationOptions = useLocationOptions(routes);
 
@@ -474,23 +476,24 @@ export function RoutesTab() {
       r.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDelete = async (route: Route) => {
-    if (
-      !(globalThis as unknown as { confirm: (s: string) => boolean }).confirm(
-        `¿Eliminár "${route.name}"? Esta acción no se puede deshacer.`
-      )
-    ) return;
-    setDeletingId(route.id);
-    try {
-      await routesApi.delete(route.id);
-      setRoutes((prev) => prev.filter((r) => r.id !== route.id));
-      if (expandedId === route.id) setExpandedId(null);
-      refreshHomeData();
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "No se pudo eliminar.");
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (route: Route) => {
+    setDeleteTarget({
+      label: `la ruta "${route.name}"`,
+      onConfirm: async () => {
+        setDeleteTarget(null);
+        setDeletingId(route.id);
+        try {
+          await routesApi.delete(route.id);
+          setRoutes((prev) => prev.filter((r) => r.id !== route.id));
+          if (expandedId === route.id) setExpandedId(null);
+          refreshHomeData();
+        } catch (e) {
+          alert(e instanceof ApiError ? e.message : "No se pudo eliminar.");
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   const handleCreate = async (form: RouteFormState) => {
@@ -533,6 +536,14 @@ export function RoutesTab() {
 
   return (
     <View>
+      {deleteTarget && (
+        <DeleteModal
+          label={deleteTarget.label}
+          onConfirm={deleteTarget.onConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
       <View style={styles.pageHeader}>
         <View>
           <Text style={styles.pageTitle}>Rutas</Text>

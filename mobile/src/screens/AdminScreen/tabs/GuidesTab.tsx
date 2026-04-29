@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { guidesApi, ApiError, type Guide } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles, C } from "../AdminScreen.styles";
+import { DeleteModal } from "../DeleteModal";
 
 // ─── Catalogs ─────────────────────────────────────────────────────────────────
 
@@ -173,13 +174,13 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
 
   return (
     <View style={styles.modalOverlay}>
-      <View style={styles.modal}>
+      <View style={[styles.modal, { overflow: "visible" as never }]}>
         <Text style={styles.modalTitle}>
           {mode === "create" ? "Nueva guía" : "Editar guía"}
         </Text>
 
         {/* Título */}
-        <View style={styles.formGroup}>
+        <View style={[styles.formGroup, { zIndex: 1 }]}>
           <Text style={styles.formLabel}>Título *</Text>
           <TextInput
             value={titulo}
@@ -192,7 +193,7 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
         </View>
 
         {/* Categoría + Nivel */}
-        <View style={styles.formRow}>
+        <View style={[styles.formRow, { zIndex: 600 }]}>
           <View style={[styles.formGroup, { zIndex: 600 }]}>
             <Text style={styles.formLabel}>Categoría *</Text>
             <SelectField
@@ -214,7 +215,7 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
         </View>
 
         {/* Duración */}
-        <View style={styles.formGroup}>
+        <View style={[styles.formGroup, { zIndex: 1 }]}>
           <Text style={styles.formLabel}>Duración (min) *</Text>
           <TextInput
             value={duracion}
@@ -288,6 +289,8 @@ function LevelBadge({ id }: { id: number | null }) {
 
 // ─── GuidesTab ────────────────────────────────────────────────────────────────
 
+type DeleteTarget = { label: string; onConfirm: () => void };
+
 export function GuidesTab() {
   const { refresh: refreshHomeData } = useHomeData();
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -297,6 +300,7 @@ export function GuidesTab() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editGuide, setEditGuide] = useState<Guide | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const fetchGuides = useCallback(async () => {
     try {
@@ -327,25 +331,36 @@ export function GuidesTab() {
     refreshHomeData();
   };
 
-  const handleDelete = async (guide: Guide) => {
-    const ok = (globalThis as unknown as { confirm: (s: string) => boolean }).confirm(
-      `¿Eliminar la guía "${guide.title}"? Esta acción no se puede deshacer.`
-    );
-    if (!ok) return;
-    setDeletingId(guide.id);
-    try {
-      await guidesApi.delete(guide.id);
-      setGuides((prev) => prev.filter((g) => g.id !== guide.id));
-      refreshHomeData();
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "No se pudo eliminar la guía.");
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (guide: Guide) => {
+    setDeleteTarget({
+      label: `la guía "${guide.title}"`,
+      onConfirm: async () => {
+        setDeleteTarget(null);
+        setDeletingId(guide.id);
+        try {
+          await guidesApi.delete(guide.id);
+          setGuides((prev) => prev.filter((g) => g.id !== guide.id));
+          refreshHomeData();
+        } catch (e) {
+          alert(e instanceof ApiError ? e.message : "No se pudo eliminar la guía.");
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   return (
     <View>
+      {/* Delete confirmation */}
+      {deleteTarget && (
+        <DeleteModal
+          label={deleteTarget.label}
+          onConfirm={deleteTarget.onConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
       {/* Modal */}
       {(modalOpen || editGuide) && (
         <GuideModal

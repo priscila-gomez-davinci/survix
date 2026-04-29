@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { usersApi, profilesApi, ApiError, type User, type Profile } from "@/src/services/api";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles, C } from "../AdminScreen.styles";
+import { DeleteModal } from "../DeleteModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -125,6 +126,7 @@ function EditProfileModal({
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [birthdate, setBirthdate] = useState("");
+  const [noProfile, setNoProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -132,27 +134,27 @@ function EditProfileModal({
     profilesApi.getById(userId)
       .then((p) => {
         setProfile(p);
-        setName(p.name ?? "");
-        setSurname(p.surname ?? "");
+        setName(p.nombre ?? "");
+        setSurname(p.apellido ?? "");
         setBio(p.bio ?? "");
-        setLocation(p.location ?? "");
-        setBirthdate(p.birthdate ?? "");
+        setLocation(p.ubicacion ?? "");
+        setBirthdate(p.fecha_nacimiento ?? "");
       })
-      .catch(() => setError("No se encontró el perfil de este usuario."))
+      .catch(() => setNoProfile(true))
       .finally(() => setLoading(false));
   }, [userId]);
 
   const handleSave = async () => {
-    if (!profile) return;
     setSaving(true);
     setError(null);
     try {
       await profilesApi.update(userId, {
-        name: name.trim() || null,
-        surname: surname.trim() || null,
-        bio: bio.trim() || null,
-        location: location.trim() || null,
-        birthdate: birthdate.trim() || null,
+        nombre: name.trim(),
+        apellido: surname.trim(),
+        bio: bio.trim(),
+        ubicacion: location.trim(),
+        fecha_nacimiento: birthdate.trim() || profile?.fecha_nacimiento,
+        foto_url: profile?.foto_url,
       });
       onClose();
     } catch (e) {
@@ -173,6 +175,24 @@ function EditProfileModal({
           </View>
         ) : (
           <>
+            {noProfile && (
+              <View style={{
+                backgroundColor: "#fffbeb",
+                borderWidth: 1,
+                borderColor: "#fde68a",
+                borderRadius: 8,
+                padding: 10,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 12,
+              }}>
+                <Ionicons name="information-circle-outline" size={16} color="#d97706" />
+                <Text style={{ color: "#92400e", fontSize: 12.5, flex: 1 }}>
+                  Este usuario aún no tiene perfil. Completá los datos para crearlo.
+                </Text>
+              </View>
+            )}
             <View style={styles.formRow}>
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Nombre</Text>
@@ -198,13 +218,27 @@ function EditProfileModal({
           </>
         )}
 
-        {error ? <Text style={styles.generalError}>{error}</Text> : null}
+        {error ? (
+          <View style={{
+            backgroundColor: "#fef2f2",
+            borderWidth: 1,
+            borderColor: "#fecaca",
+            borderRadius: 8,
+            padding: 10,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}>
+            <Ionicons name="alert-circle-outline" size={16} color="#dc2626" />
+            <Text style={{ color: "#dc2626", fontSize: 12.5, flex: 1 }}>{error}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.modalFooter}>
           <Pressable style={styles.btnGhost} onPress={onClose} disabled={saving}>
             <Text style={styles.btnGhostText}>Cancelar</Text>
           </Pressable>
-          {!loading && !error && (
+          {!loading && (
             <Pressable
               style={[styles.btnSave, saving && { opacity: 0.7 }]}
               onPress={handleSave}
@@ -247,6 +281,7 @@ export function UsersTab() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [modal, setModal] = useState<Modal>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ label: string; onConfirm: () => void } | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -279,20 +314,22 @@ export function UsersTab() {
 
   const adminCount = users.filter((u) => u.role === "admin").length;
 
-  const handleDelete = async (user: User) => {
-    const ok = (globalThis as unknown as { confirm: (s: string) => boolean }).confirm(
-      `¿Eliminar al usuario "${user.email}"? Esta acción no se puede deshacer.`
-    );
-    if (!ok) return;
-    setDeletingId(user.id_usuario);
-    try {
-      await usersApi.delete(user.id_usuario);
-      setUsers((prev) => prev.filter((u) => u.id_usuario !== user.id_usuario));
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "No se pudo eliminar el usuario.");
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (user: User) => {
+    setDeleteTarget({
+      label: `al usuario "${user.email}"`,
+      onConfirm: async () => {
+        setDeleteTarget(null);
+        setDeletingId(user.id_usuario);
+        try {
+          await usersApi.delete(user.id_usuario);
+          setUsers((prev) => prev.filter((u) => u.id_usuario !== user.id_usuario));
+        } catch (e) {
+          alert(e instanceof ApiError ? e.message : "No se pudo eliminar el usuario.");
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   const handleEmailSaved = (updated: User) => {
@@ -304,6 +341,15 @@ export function UsersTab() {
 
   return (
     <View>
+      {/* Delete confirmation */}
+      {deleteTarget && (
+        <DeleteModal
+          label={deleteTarget.label}
+          onConfirm={deleteTarget.onConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
       {/* Modals */}
       {modal?.type === "email" && (
         <EditEmailModal

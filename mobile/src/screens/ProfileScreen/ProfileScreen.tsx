@@ -24,10 +24,10 @@ type ProfileForm = {
 
 function profileToForm(profile: Profile | null, email: string): ProfileForm {
   return {
-    name: profile?.name ?? "",
-    surname: profile?.surname ?? "",
+    name: profile?.nombre ?? "",
+    surname: profile?.apellido ?? "",
     email,
-    location: profile?.location ?? "",
+    location: profile?.ubicacion ?? "",
     bio: profile?.bio ?? "",
   };
 }
@@ -35,7 +35,7 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
 export default function ProfileScreen() {
   const { user, isAdmin } = useAuth();
 
-  const [, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
   const [draft, setDraft] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
   const [isEditing, setIsEditing] = useState(false);
@@ -78,10 +78,12 @@ export default function ProfileScreen() {
       setIsSaving(true);
       try {
         const updated = await profilesApi.update(user.id_usuario, {
-          name: draft.name || null,
-          surname: draft.surname || null,
-          bio: draft.bio || null,
-          location: draft.location || null,
+          nombre: draft.name,
+          apellido: draft.surname,
+          bio: draft.bio,
+          ubicacion: draft.location,
+          foto_url: profile?.foto_url,
+          fecha_nacimiento: profile?.fecha_nacimiento,
         });
         setProfile(updated);
         const f = profileToForm(updated, user.email);

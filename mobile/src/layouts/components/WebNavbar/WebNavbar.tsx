@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
+import { useState } from "react";
 import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./WebNavbar.styles";
@@ -14,18 +15,93 @@ type NavRoute = {
 };
 
 const navRoutes: NavRoute[] = [
-  { path: "/home", icon: "home-outline", iconActive: "home", label: "Inicio" },
-  { path: "/map", icon: "location-outline", iconActive: "location", label: "Mapa" },
-  { path: "/compose", icon: "create-outline", iconActive: "create", label: "Novedades" },
-  { path: "/blog", icon: "newspaper-outline", iconActive: "newspaper", label: "Blog" },
-  { path: "/profile", icon: "person-outline", iconActive: "person", label: "Perfil" },
+  { path: "/home",    icon: "home-outline",      iconActive: "home",      label: "Inicio" },
+  { path: "/map",     icon: "location-outline",  iconActive: "location",  label: "Mapa" },
+  { path: "/compose", icon: "create-outline",    iconActive: "create",    label: "Novedades" },
+  { path: "/blog",    icon: "newspaper-outline", iconActive: "newspaper", label: "Blog" },
+  { path: "/profile", icon: "person-outline",    iconActive: "person",    label: "Perfil" },
 ];
+
+// ─── Logout confirmation modal ────────────────────────────────────────────────
+
+function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <View style={{
+      position: "fixed" as never,
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+    }}>
+      <View style={{
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        padding: 28,
+        width: 340,
+        maxWidth: "90%" as never,
+        alignItems: "center",
+        gap: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 12,
+      }}>
+        {/* Icon */}
+        <View style={{
+          width: 52, height: 52, borderRadius: 26,
+          backgroundColor: "#fee2e2",
+          alignItems: "center", justifyContent: "center",
+          marginBottom: 4,
+        }}>
+          <Ionicons name="log-out-outline" size={26} color="#dc2626" />
+        </View>
+
+        <Text style={{ fontSize: 17, fontWeight: "700", color: "#1a2a1e" }}>
+          Cerrar sesión
+        </Text>
+        <Text style={{ fontSize: 13, color: "#6b7a70", textAlign: "center", marginBottom: 8 }}>
+          ¿Estás seguro que querés salir de tu cuenta?
+        </Text>
+
+        {/* Buttons */}
+        <View style={{ flexDirection: "row", gap: 10, width: "100%" as never }}>
+          <Pressable
+            style={({ pressed }) => ({
+              flex: 1, height: 40, borderRadius: 8,
+              borderWidth: 1, borderColor: "#dde5df",
+              alignItems: "center", justifyContent: "center",
+              backgroundColor: pressed ? "#f4f5f4" : "transparent",
+            })}
+            onPress={onCancel}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "500", color: "#3a4a3e" }}>Cancelar</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => ({
+              flex: 1, height: 40, borderRadius: 8,
+              alignItems: "center", justifyContent: "center",
+              backgroundColor: pressed ? "#b91c1c" : "#dc2626",
+            })}
+            onPress={onConfirm}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>Salir</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── WebNavbar ────────────────────────────────────────────────────────────────
 
 export function WebNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAdmin, user, logout } = useAuth();
   const isAdminPage = pathname === "/admin";
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const doLogout = async () => {
     await logout();
@@ -34,10 +110,7 @@ export function WebNavbar() {
 
   const handleLogout = () => {
     if (Platform.OS === "web") {
-      // eslint-disable-next-line no-restricted-globals
-      if ((globalThis as unknown as { confirm: (msg: string) => boolean }).confirm("¿Seguro que querés cerrar sesión?")) {
-        void doLogout();
-      }
+      setShowLogoutModal(true);
       return;
     }
     Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
@@ -48,6 +121,14 @@ export function WebNavbar() {
 
   return (
     <View style={styles.navbar}>
+      {/* Logout modal */}
+      {showLogoutModal && (
+        <LogoutModal
+          onConfirm={() => { setShowLogoutModal(false); void doLogout(); }}
+          onCancel={() => setShowLogoutModal(false)}
+        />
+      )}
+
       <Pressable style={styles.brand} onPress={() => router.replace("/home")}>
         <Ionicons name="shield-checkmark" size={22} color="#FFFFFF" />
         <Text style={styles.brandText}>SurvixApp</Text>
@@ -83,15 +164,15 @@ export function WebNavbar() {
 
         {isAdmin && (
           <Pressable
-            style={[styles.navItem, pathname === "/admin" && styles.navItemActive]}
+            style={[styles.navItem, isAdminPage && styles.navItemActive]}
             onPress={() => router.push("/admin")}
           >
             <Ionicons
-              name={pathname === "/admin" ? "shield-checkmark" : "shield-checkmark-outline"}
+              name={isAdminPage ? "shield-checkmark" : "shield-checkmark-outline"}
               size={18}
-              color={pathname === "/admin" ? "#FFFFFF" : "rgba(255,255,255,0.7)"}
+              color={isAdminPage ? "#FFFFFF" : "rgba(255,255,255,0.7)"}
             />
-            <Text style={[styles.navLabel, pathname === "/admin" && styles.navLabelActive]}>
+            <Text style={[styles.navLabel, isAdminPage && styles.navLabelActive]}>
               Admin
             </Text>
           </Pressable>
