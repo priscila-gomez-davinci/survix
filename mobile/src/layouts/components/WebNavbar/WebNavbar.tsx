@@ -4,6 +4,8 @@ import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./WebNavbar.styles";
 
+const AVATAR_BG = "#2a4f38";
+
 type NavRoute = {
   path: "/home" | "/map" | "/compose" | "/blog" | "/profile";
   icon: keyof typeof Ionicons.glyphMap;
@@ -22,7 +24,8 @@ const navRoutes: NavRoute[] = [
 export function WebNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, user, logout } = useAuth();
+  const isAdminPage = pathname === "/admin";
 
   const doLogout = async () => {
     await logout();
@@ -98,6 +101,23 @@ export function WebNavbar() {
           <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
           <Text style={styles.navLabel}>Salir</Text>
         </Pressable>
+
+        {isAdminPage && user && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 8 }}>
+            <View style={{ width: 1, height: 20, backgroundColor: "rgba(255,255,255,0.2)" }} />
+            <Text style={[styles.navLabel, { fontSize: 12 }]}>Panel Admin</Text>
+            <View style={{
+              width: 30, height: 30, borderRadius: 15,
+              backgroundColor: AVATAR_BG,
+              borderWidth: 1.5, borderColor: "rgba(255,255,255,0.25)",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+                {user.email.slice(0, 2).toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );

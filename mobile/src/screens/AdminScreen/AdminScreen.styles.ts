@@ -21,62 +21,10 @@ export const C = {
 };
 
 export const styles = StyleSheet.create({
-  // ─── Outer shell ─────────────────────────────────────────────────────────────
+  // ─── Outer shell (sidebar + main, fills below WebNavbar) ─────────────────────
   root: {
     flex: 1,
     backgroundColor: C.bg,
-  },
-
-  // ─── Topbar ───────────────────────────────────────────────────────────────────
-  topbar: {
-    height: 56,
-    backgroundColor: C.greenDark,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 28,
-    gap: 0,
-    zIndex: 100,
-  },
-  topbarLogo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginRight: 40,
-  },
-  topbarLogoText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  topbarRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginLeft: "auto" as never,
-  },
-  topbarRoleText: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 12,
-  },
-  topbarAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: C.greenMid,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  topbarAvatarText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  // ─── Body ─────────────────────────────────────────────────────────────────────
-  body: {
-    flex: 1,
     flexDirection: "row",
   },
 
@@ -749,5 +697,114 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     color: C.muted,
     textAlign: "center",
+  },
+
+  // ─── Dashboard panels ─────────────────────────────────────────────────────────
+  dashboardRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 0,
+  },
+  panelCard: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  panelHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  panelTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: C.text,
+  },
+  panelBody: {
+    padding: 20,
+    gap: 12,
+  },
+
+  // Activity list
+  activityItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f4f1",
+  },
+  activityItemLast: {
+    borderBottomWidth: 0,
+  },
+  activityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  activityText: {
+    flex: 1,
+    fontSize: 13,
+    color: C.text,
+  },
+
+  // Distribution bars
+  distRow: {
+    gap: 6,
+  },
+  distLabel: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  distLabelText: {
+    fontSize: 12.5,
+    color: C.textSub,
+    fontWeight: "500",
+  },
+  distCount: {
+    fontSize: 12.5,
+    color: C.muted,
+  },
+  distTrack: {
+    height: 6,
+    backgroundColor: "#eef1ee",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  distFill: {
+    height: 6,
+    borderRadius: 3,
+  },
+
+  // Filter tabs (used in UsersTab)
+  filterTabs: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    marginBottom: 16,
+  },
+  filterTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    marginBottom: -1,
+  },
+  filterTabActive: {
+    borderBottomColor: C.greenDark,
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: C.muted,
+  },
+  filterTabTextActive: {
+    color: C.greenDark,
+    fontWeight: "600",
   },
 });

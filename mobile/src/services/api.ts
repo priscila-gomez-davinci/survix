@@ -196,6 +196,9 @@ export const authApi = {
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export const usersApi = {
+  list: () =>
+    request<User[]>("/users", {}, true),
+
   getById: (id: number) =>
     request<User>(`/users/${id}`, {}, true),
 
@@ -204,6 +207,9 @@ export const usersApi = {
       method: "PUT",
       body: JSON.stringify(data),
     }, true),
+
+  delete: (id: number) =>
+    request<void>(`/users/${id}`, { method: "DELETE" }, true),
 };
 
 // ─── Profiles ─────────────────────────────────────────────────────────────────

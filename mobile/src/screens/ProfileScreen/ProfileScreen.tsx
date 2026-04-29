@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { styles } from "./ProfileScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
 import { profilesApi, type Profile } from "@/src/services/api";
@@ -34,8 +33,7 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
 }
 
 export default function ProfileScreen() {
-  const { user, isAdmin, logout } = useAuth();
-  const router = useRouter();
+  const { user, isAdmin } = useAuth();
 
   const [, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
@@ -104,20 +102,6 @@ export default function ProfileScreen() {
   const handleCancel = () => {
     setDraft(form);
     setIsEditing(false);
-  };
-
-  const handleLogout = () => {
-    Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Salir",
-        style: "destructive",
-        onPress: () => {
-          router.replace("/login");
-          void logout();
-        },
-      },
-    ]);
   };
 
   const visibleForm = isEditing ? draft : form;
@@ -261,9 +245,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Pressable style={styles.secondaryButton} onPress={handleLogout}>
-          <Text style={styles.secondaryButtonText}>Cerrar sesión</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
