@@ -73,6 +73,22 @@ export function WebNavbar() {
 
         <View style={styles.navDivider} />
 
+        {isAdmin && (
+          <Pressable
+            style={[styles.navItem, pathname === "/admin" && styles.navItemActive]}
+            onPress={() => router.push("/admin")}
+          >
+            <Ionicons
+              name={pathname === "/admin" ? "shield-checkmark" : "shield-checkmark-outline"}
+              size={18}
+              color={pathname === "/admin" ? "#FFFFFF" : "rgba(255,255,255,0.7)"}
+            />
+            <Text style={[styles.navLabel, pathname === "/admin" && styles.navLabelActive]}>
+              Admin
+            </Text>
+          </Pressable>
+        )}
+
         <Pressable style={styles.navItem} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
           <Text style={styles.navLabel}>Salir</Text>
