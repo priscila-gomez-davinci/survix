@@ -61,4 +61,10 @@ export const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
   },
+  navDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    marginHorizontal: 6,
+  },
 });

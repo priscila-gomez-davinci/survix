@@ -228,6 +228,14 @@ export default function LoginScreen() {
                 }
               </Pressable>
 
+              <Link href="/forgot-password" asChild>
+                <Pressable disabled={anyLoading}>
+                  <Text style={[styles.linkText, { fontSize: 13, color: "#5E6A66", marginTop: 10 }]}>
+                    ¿Olvidaste tu contraseña?
+                  </Text>
+                </Pressable>
+              </Link>
+
               <Pressable
                 style={[
                   styles.googleButton,

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./WebNavbar.styles";
 
@@ -22,7 +22,21 @@ const navRoutes: NavRoute[] = [
 export function WebNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAdmin } = useAuth();
+  const { isAdmin, logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Salir",
+        style: "destructive",
+        onPress: () => {
+          router.replace("/login");
+          void logout();
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={styles.navbar}>
@@ -56,6 +70,13 @@ export function WebNavbar() {
             </Pressable>
           );
         })}
+
+        <View style={styles.navDivider} />
+
+        <Pressable style={styles.navItem} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
+          <Text style={styles.navLabel}>Salir</Text>
+        </Pressable>
       </View>
     </View>
   );
