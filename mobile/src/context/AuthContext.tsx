@@ -5,11 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { firebaseAuth } from "@/src/services/firebase";
 import {
   authApi,
@@ -44,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Register auto-logout for expired tokens (401 responses)
   useEffect(() => {
     setUnauthorizedHandler(async () => {
       await clearStoredToken();
@@ -53,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Rehydrate session on app start
   useEffect(() => {
     (async () => {
       try {
@@ -71,19 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // All email/password flows go through Firebase first to get a real firebase_uid,
-  // then sync that uid with the backend via /auth/firebase-sync.
-
+  // Email/password → backend endpoints directly (firebase_uid queda nullable)
   const register = async (email: string, password: string) => {
-    const { user: fbUser } = await createUserWithEmailAndPassword(
-      firebaseAuth,
-      email,
-      password,
-    );
-    const { access_token } = await authApi.firebaseSync(
-      fbUser.uid,
-      fbUser.email ?? email,
-    );
+    const { access_token } = await authApi.register(email, password);
     await setStoredToken(access_token);
     setToken(access_token);
     const me = await authApi.me();
@@ -91,21 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const { user: fbUser } = await signInWithEmailAndPassword(
-      firebaseAuth,
-      email,
-      password,
-    );
-    const { access_token } = await authApi.firebaseSync(
-      fbUser.uid,
-      fbUser.email ?? email,
-    );
+    const { access_token } = await authApi.login(email, password);
     await setStoredToken(access_token);
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
   };
 
+  // Google → Firebase para obtener uid real → firebase-sync
   const loginWithGoogle = async (firebase_uid: string, email: string) => {
     const { access_token } = await authApi.firebaseSync(firebase_uid, email);
     await setStoredToken(access_token);

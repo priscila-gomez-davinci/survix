@@ -19,6 +19,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import { styles } from "./RegisterScreen.style";
 import { useAuth } from "@/src/context/AuthContext";
+import { ApiError } from "@/src/services/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,8 +43,8 @@ function validate(email: string, password: string, confirmPassword: string): Err
   }
   if (!password) {
     errors.password = "La contraseña es obligatoria.";
-  } else if (password.length < 6) {
-    errors.password = "Mínimo 6 caracteres.";
+  } else if (password.length < 8) {
+    errors.password = "Mínimo 8 caracteres.";
   }
   if (!confirmPassword) {
     errors.confirmPassword = "Confirmá tu contraseña.";
@@ -51,21 +52,6 @@ function validate(email: string, password: string, confirmPassword: string): Err
     errors.confirmPassword = "Las contraseñas no coinciden.";
   }
   return errors;
-}
-
-function mapFirebaseError(error: FirebaseError): Errors {
-  switch (error.code) {
-    case "auth/email-already-in-use":
-      return { email: "Ya existe una cuenta con ese correo." };
-    case "auth/weak-password":
-      return { password: "La contraseña debe tener al menos 6 caracteres." };
-    case "auth/invalid-email":
-      return { email: "Correo inválido." };
-    case "auth/too-many-requests":
-      return { general: "Demasiados intentos. Intentá más tarde." };
-    default:
-      return { general: "No se pudo crear la cuenta. Intentá de nuevo." };
-  }
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -89,35 +75,53 @@ export default function RegisterScreen() {
   });
 
   useEffect(() => {
-    if (response?.type !== "success") return;
+    if (!response) return;
+    console.log("[Google response]", response.type, response);
+
+    if (response.type === "error") {
+      Alert.alert("Error de Google", response.error?.message ?? "Error desconocido.");
+      return;
+    }
+    if (response.type !== "success") return;
+
     const { idToken, accessToken } = response.authentication ?? {};
-    if (!accessToken) return;
+    if (!accessToken) {
+      Alert.alert("Error", "No se recibió token de Google.");
+      return;
+    }
 
     setGoogleLoading(true);
     (async () => {
       try {
         if (idToken) {
-          // Sign into Firebase with the Google credential to get a real Firebase UID
           const credential = GoogleAuthProvider.credential(idToken, accessToken);
           const { user } = await signInWithCredential(firebaseAuth, credential);
+          console.log("[Google Firebase uid]", user.uid, user.email);
           await loginWithGoogle(user.uid, user.email ?? "");
         } else {
-          // Fallback: fetch Google user info manually
+          console.log("[Google] sin idToken, usando userinfo API");
           const info = await fetch("https://www.googleapis.com/userinfo/v2/me", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }).then((r) => r.json()) as { id: string; email: string };
+          console.log("[Google userinfo]", info.id, info.email);
           await loginWithGoogle(info.id, info.email);
         }
         router.replace("/home");
-      } catch {
-        setErrors({ general: "No se pudo completar el registro con Google." });
+      } catch (error) {
+        console.error("[Google register error]", error);
+        const msg = error instanceof ApiError
+          ? error.message
+          : error instanceof FirebaseError
+            ? error.code
+            : "Error inesperado";
+        Alert.alert("No se pudo completar el registro con Google", msg);
       } finally {
         setGoogleLoading(false);
       }
     })();
   }, [response]);
 
-  // ─── Email register ───────────────────────────────────────────────────────
+  // ─── Email register → backend directo ────────────────────────────────────
   const handleRegister = async () => {
     const validationErrors = validate(email, password, confirmPassword);
     if (Object.keys(validationErrors).length > 0) {
@@ -130,11 +134,16 @@ export default function RegisterScreen() {
       await register(email.trim(), password);
       router.replace("/home");
     } catch (error) {
-      setErrors(
-        error instanceof FirebaseError
-          ? mapFirebaseError(error)
-          : { general: "Ocurrió un error inesperado." },
-      );
+      console.error("[Register error]", error);
+      if (error instanceof ApiError) {
+        if (error.status === 409 || error.status === 400) {
+          setErrors({ email: "Ya existe una cuenta con ese correo." });
+        } else {
+          setErrors({ general: `Error del servidor: ${error.message}` });
+        }
+      } else {
+        setErrors({ general: "Ocurrió un error inesperado." });
+      }
     } finally {
       setLoading(false);
     }

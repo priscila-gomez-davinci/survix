@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { styles } from "./ProfileScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
 import { profilesApi, type Profile } from "@/src/services/api";
@@ -34,6 +35,7 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
 
 export default function ProfileScreen() {
   const { user, isAdmin, logout } = useAuth();
+  const router = useRouter();
 
   const [, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
@@ -107,7 +109,14 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Salir", style: "destructive", onPress: () => void logout() },
+      {
+        text: "Salir",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/login");
+        },
+      },
     ]);
   };
 
