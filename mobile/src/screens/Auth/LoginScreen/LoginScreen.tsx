@@ -1,9 +1,10 @@
 import { FirebaseError } from "firebase/app";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { GoogleAuthProvider, signInWithCredential, signInWithPopup } from "firebase/auth";
 import { firebaseAuth } from "@/src/services/firebase";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -112,6 +113,23 @@ export default function LoginScreen() {
     })();
   }, [response]);
 
+  // ─── Google sign-in (web) — Firebase popup, no redirect_uri needed ──────
+  const handleGoogleSignInWeb = async () => {
+    setGoogleLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(firebaseAuth, provider);
+      await loginWithGoogle(result.user.uid, result.user.email ?? "");
+      router.replace("/home");
+    } catch (error) {
+      console.error("[Google login error]", error);
+      const msg = error instanceof FirebaseError ? error.code : "Error inesperado";
+      Alert.alert("No se pudo iniciar sesión con Google", msg);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   // ─── Email login → backend directo ───────────────────────────────────────
   const handleLogin = async () => {
     const validationErrors = validate(email, password);
@@ -213,22 +231,16 @@ export default function LoginScreen() {
               <Pressable
                 style={[
                   styles.googleButton,
-                  (!googleClientId || !request || anyLoading) && { opacity: 0.5 },
+                  (anyLoading || (Platform.OS !== "web" && (!googleClientId || !request))) && { opacity: 0.5 },
                 ]}
-                onPress={() => promptAsync()}
-                disabled={!googleClientId || !request || anyLoading}
+                onPress={Platform.OS === "web" ? handleGoogleSignInWeb : () => promptAsync()}
+                disabled={anyLoading || (Platform.OS !== "web" && (!googleClientId || !request))}
               >
                 {googleLoading
                   ? <ActivityIndicator color="#2457C5" />
                   : <Text style={styles.googleButtonText}>Seguir con Google</Text>
                 }
               </Pressable>
-
-              {!googleClientId && (
-                <Text style={[styles.errorText, { textAlign: "center" }]}>
-                  Google auth no configurado (falta EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
-                </Text>
-              )}
 
               <Link href="/register" asChild>
                 <Pressable disabled={anyLoading}>
