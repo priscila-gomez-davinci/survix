@@ -150,7 +150,7 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
       if (mode === "create") {
         result = await guidesApi.create({
           titulo: titulo.trim(),
-          descripcion: descripcion.trim() || undefined,
+          descripcion: descripcion.trim(),
           duracion_min: Number(duracion),
           id_categoria_guias: categoryId!,
           id_nivel_complejidad: levelId!,
@@ -158,7 +158,7 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
       } else {
         result = await guidesApi.update(initial!.id, {
           titulo: titulo.trim(),
-          descripcion: descripcion.trim() || undefined,
+          descripcion: descripcion.trim(),
           duracion_min: Number(duracion),
           id_categoria_guias: categoryId!,
           id_nivel_complejidad: levelId!,

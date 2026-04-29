@@ -8,34 +8,30 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { routesApi, ApiError, type Route, type RoutePoint } from "@/src/services/api";
+import { routesApi, catalogApi, ApiError, type Route, type RoutePoint, type CatalogItem } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles, C } from "../AdminScreen.styles";
 import { DeleteModal } from "../DeleteModal";
 
-// ─── Catalog options (fetched from server data + reasonable defaults) ─────────
+// ─── Fallback catalog options ─────────────────────────────────────────────────
 
-const DIFFICULTY_OPTIONS = [
+const FALLBACK_DIFFICULTY: SelectOption[] = [
   { value: 1, label: "Fácil" },
   { value: 2, label: "Intermedio" },
   { value: 3, label: "Difícil" },
-  { value: 4, label: "Experto" },
 ];
 
-const ACTIVITY_OPTIONS = [
+const FALLBACK_ACTIVITY: SelectOption[] = [
   { value: 1, label: "Trekking" },
-  { value: 2, label: "Senderismo" },
-  { value: 3, label: "Kayak" },
-  { value: 4, label: "Escalada" },
-  { value: 5, label: "Ciclismo MTB" },
-  { value: 6, label: "Canyoning" },
-  { value: 7, label: "Avistaje de fauna" },
-  { value: 8, label: "Camping" },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SelectOption = { value: number; label: string };
+
+function catalogToOptions(items: CatalogItem[]): SelectOption[] {
+  return items.map((c) => ({ value: c.id, label: c.nombre }));
+}
 
 // ─── SelectField component ────────────────────────────────────────────────────
 
@@ -135,11 +131,15 @@ const emptyRouteForm: RouteFormState = {
 function RouteModal({
   initial,
   locationOptions,
+  activityOptions,
+  difficultyOptions,
   onClose,
   onSave,
 }: {
   initial: Partial<RouteFormState> | null;
   locationOptions: SelectOption[];
+  activityOptions: SelectOption[];
+  difficultyOptions: SelectOption[];
   onClose: () => void;
   onSave: (form: RouteFormState) => Promise<void>;
 }) {
@@ -188,7 +188,7 @@ function RouteModal({
       <Pressable style={{ position: "absolute", inset: 0 } as never} onPress={onClose} />
       <View style={styles.modal}>
         <Text style={styles.modalTitle}>
-          {isEdit ? "Editar ruta" : "Nueva ruta"}
+          {isEdit ? "Editar actividad" : "Nueva actividad"}
         </Text>
 
         <View style={styles.formGroup}>
@@ -250,7 +250,7 @@ function RouteModal({
             <SelectField
               value={form.id_actividad}
               onChange={(v) => set("id_actividad", v)}
-              options={ACTIVITY_OPTIONS}
+              options={activityOptions}
               placeholder="Seleccioná actividad"
             />
             {errors.id_actividad ? <Text style={styles.formError}>{errors.id_actividad}</Text> : null}
@@ -260,7 +260,7 @@ function RouteModal({
             <SelectField
               value={form.id_dificultad}
               onChange={(v) => set("id_dificultad", v)}
-              options={DIFFICULTY_OPTIONS}
+              options={difficultyOptions}
               placeholder="Seleccioná nivel"
             />
             {errors.id_dificultad ? <Text style={styles.formError}>{errors.id_dificultad}</Text> : null}
@@ -455,6 +455,8 @@ export function RoutesTab() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ label: string; onConfirm: () => void } | null>(null);
+  const [activityOptions, setActivityOptions] = useState<SelectOption[]>(FALLBACK_ACTIVITY);
+  const [difficultyOptions, setDifficultyOptions] = useState<SelectOption[]>(FALLBACK_DIFFICULTY);
 
   const locationOptions = useLocationOptions(routes);
 
@@ -470,10 +472,19 @@ export function RoutesTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    Promise.all([catalogApi.activities(), catalogApi.difficulties()])
+      .then(([acts, diffs]) => {
+        if (acts.length > 0) setActivityOptions(catalogToOptions(acts));
+        if (diffs.length > 0) setDifficultyOptions(catalogToOptions(diffs));
+      })
+      .catch(() => { /* keep fallback */ });
+  }, []);
+
   const filtered = routes.filter(
     (r) =>
       !search ||
-      r.name.toLowerCase().includes(search.toLowerCase())
+      (r.name ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDelete = (route: Route) => {
@@ -499,7 +510,7 @@ export function RoutesTab() {
   const handleCreate = async (form: RouteFormState) => {
     const created = await routesApi.create({
       nombre: form.nombre.trim(),
-      descripcion: form.descripcion.trim() || undefined,
+      descripcion: form.descripcion.trim(),
       distancia_km: Number(form.distancia_km),
       duracion_min: Number(form.duracion_min),
       id_actividad: form.id_actividad!,
@@ -529,10 +540,10 @@ export function RoutesTab() {
     : null;
 
   const diffLabel = (id?: number) =>
-    DIFFICULTY_OPTIONS.find((o) => o.value === id)?.label ?? `#${id ?? "?"}`;
+    difficultyOptions.find((o) => o.value === id)?.label ?? `#${id ?? "?"}`;
 
   const actLabel = (id?: number) =>
-    ACTIVITY_OPTIONS.find((o) => o.value === id)?.label ?? `#${id ?? "?"}`;
+    activityOptions.find((o) => o.value === id)?.label ?? `#${id ?? "?"}`;
 
   return (
     <View>
@@ -718,6 +729,8 @@ export function RoutesTab() {
               : null
           }
           locationOptions={locationOptions}
+          activityOptions={activityOptions}
+          difficultyOptions={difficultyOptions}
           onClose={() => setShowModal(null)}
           onSave={showModal === "create" ? handleCreate : handleEdit}
         />

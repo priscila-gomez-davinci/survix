@@ -122,8 +122,8 @@ export type RouteImage = {
 
 export type RoutePoint = {
   id: number;
-  coordinates: string; // WKT format "POINT(lon lat)" returned by GET
-  latlong?: string;    // field returned by API alongside coordinates
+  coordinates: string;
+  latlong?: string;
   order: number;
   orden?: number;
 };
@@ -133,7 +133,7 @@ export type RouteCreateRequest = {
   id_dificultad: number;
   id_ubicacion: number;
   nombre: string;
-  descripcion?: string;
+  descripcion: string;
   distancia_km: number;
   duracion_min: number;
 };
@@ -165,7 +165,7 @@ export type GuideProduct = {
 
 export type GuideCreateRequest = {
   titulo: string;
-  descripcion?: string;
+  descripcion: string;
   duracion_min: number;
   id_categoria_guias: number;
   id_nivel_complejidad: number;
@@ -176,6 +176,64 @@ export type GuideStepRequest = {
   descripcion: string;
   orden: number;
 };
+
+export type CatalogItem = {
+  id: number;
+  nombre: string;
+};
+
+export type RoleItem = {
+  id_rol: number;
+  nombre: string;
+};
+
+// ─── Internal backend shapes + mappers ───────────────────────────────────────
+// Backend uses Spanish field names (id_rutas, nombre, id_guias_supervivencia, titulo…).
+// These types + functions convert them to the public English-named types above.
+
+type _BackendRoute = {
+  id_rutas: number;
+  nombre: string;
+  descripcion: string;
+  distancia_km: number;
+  duracion_min: number;
+  id_actividad: number;
+  id_dificultad: number;
+  id_ubicacion: number;
+};
+
+type _BackendGuide = {
+  id_guias_supervivencia: number;
+  titulo: string;
+  descripcion: string;
+  duracion_min: number;
+  id_categoria_guias: number;
+  id_nivel_complejidad: number;
+};
+
+function _mapRoute(r: _BackendRoute): Route {
+  return {
+    id: r.id_rutas,
+    name: r.nombre,
+    description: r.descripcion,
+    distance: r.distancia_km,
+    duration: r.duracion_min,
+    id_actividad: r.id_actividad,
+    id_dificultad: r.id_dificultad,
+    id_ubicacion: r.id_ubicacion,
+  };
+}
+
+function _mapGuide(g: _BackendGuide): Guide {
+  return {
+    id: g.id_guias_supervivencia,
+    title: g.titulo,
+    description: g.descripcion,
+    duration: g.duracion_min,
+    category_id: g.id_categoria_guias,
+    complexity_level_id: g.id_nivel_complejidad,
+  };
+}
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -218,6 +276,20 @@ export const usersApi = {
 
   delete: (id: number) =>
     request<void>(`/users/${id}`, { method: "DELETE" }, true),
+
+  updateRole: (userId: number, roleId: number) =>
+    request<User>(`/users/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ id_rol: roleId }),
+    }, true),
+};
+
+// ─── Catalog ──────────────────────────────────────────────────────────────────
+
+export const catalogApi = {
+  activities: () => request<CatalogItem[]>("/activities"),
+  difficulties: () => request<CatalogItem[]>("/difficulties"),
+  roles: () => request<RoleItem[]>("/roles"),
 };
 
 // ─── Profiles ─────────────────────────────────────────────────────────────────
@@ -245,7 +317,7 @@ export type RouteFilters = {
 };
 
 export const routesApi = {
-  list: (filters?: RouteFilters) => {
+  list: async (filters?: RouteFilters): Promise<Route[]> => {
     const params = new URLSearchParams();
     if (filters?.activity) params.set("activity", filters.activity);
     if (filters?.difficulty) params.set("difficulty", filters.difficulty);
@@ -254,23 +326,30 @@ export const routesApi = {
     if (filters?.duration) params.set("duration", String(filters.duration));
     if (filters?.search) params.set("search", filters.search);
     const query = params.toString();
-    return request<Route[]>(`/routes${query ? `?${query}` : ""}`);
+    const raw = await request<_BackendRoute[]>(`/routes${query ? `?${query}` : ""}`);
+    return raw.map(_mapRoute);
   },
 
-  getById: (id: number) =>
-    request<Route>(`/routes/${id}`),
+  getById: async (id: number): Promise<Route> => {
+    const raw = await request<_BackendRoute>(`/routes/${id}`);
+    return _mapRoute(raw);
+  },
 
-  create: (data: RouteCreateRequest) =>
-    request<Route>("/routes", {
+  create: async (data: RouteCreateRequest): Promise<Route> => {
+    const raw = await request<_BackendRoute>("/routes", {
       method: "POST",
       body: JSON.stringify(data),
-    }, true),
+    }, true);
+    return _mapRoute(raw);
+  },
 
-  update: (id: number, data: Partial<RouteCreateRequest>) =>
-    request<Route>(`/routes/${id}`, {
+  update: async (id: number, data: Partial<RouteCreateRequest>): Promise<Route> => {
+    const raw = await request<_BackendRoute>(`/routes/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
-    }, true),
+    }, true);
+    return _mapRoute(raw);
+  },
 
   delete: (id: number) =>
     request<void>(`/routes/${id}`, { method: "DELETE" }, true),
@@ -336,29 +415,36 @@ export type GuideFilters = {
 };
 
 export const guidesApi = {
-  list: (filters?: GuideFilters) => {
+  list: async (filters?: GuideFilters): Promise<Guide[]> => {
     const params = new URLSearchParams();
     if (filters?.category) params.set("category", filters.category);
     if (filters?.complexity) params.set("complexity", filters.complexity);
     if (filters?.search) params.set("search", filters.search);
     const query = params.toString();
-    return request<Guide[]>(`/guides${query ? `?${query}` : ""}`);
+    const raw = await request<_BackendGuide[]>(`/guides${query ? `?${query}` : ""}`);
+    return raw.map(_mapGuide);
   },
 
-  getById: (id: number) =>
-    request<Guide>(`/guides/${id}`),
+  getById: async (id: number): Promise<Guide> => {
+    const raw = await request<_BackendGuide>(`/guides/${id}`);
+    return _mapGuide(raw);
+  },
 
-  create: (data: GuideCreateRequest) =>
-    request<Guide>("/guides", {
+  create: async (data: GuideCreateRequest): Promise<Guide> => {
+    const raw = await request<_BackendGuide>("/guides", {
       method: "POST",
       body: JSON.stringify(data),
-    }, true),
+    }, true);
+    return _mapGuide(raw);
+  },
 
-  update: (id: number, data: Partial<GuideCreateRequest>) =>
-    request<Guide>(`/guides/${id}`, {
+  update: async (id: number, data: Partial<GuideCreateRequest>): Promise<Guide> => {
+    const raw = await request<_BackendGuide>(`/guides/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
-    }, true),
+    }, true);
+    return _mapGuide(raw);
+  },
 
   delete: (id: number) =>
     request<void>(`/guides/${id}`, { method: "DELETE" }, true),

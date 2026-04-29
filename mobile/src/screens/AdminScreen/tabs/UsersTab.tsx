@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { usersApi, profilesApi, ApiError, type User, type Profile } from "@/src/services/api";
+import { usersApi, profilesApi, catalogApi, ApiError, type User, type Profile, type RoleItem } from "@/src/services/api";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles, C } from "../AdminScreen.styles";
 import { DeleteModal } from "../DeleteModal";
@@ -257,11 +257,129 @@ function EditProfileModal({
   );
 }
 
+// ─── Change role modal ────────────────────────────────────────────────────────
+
+function ChangeRoleModal({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: User;
+  onClose: () => void;
+  onSaved: (updated: User) => void;
+}) {
+  const [roles, setRoles] = useState<RoleItem[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<number>(user.id_rol);
+  const [loadingRoles, setLoadingRoles] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    catalogApi.roles()
+      .then(setRoles)
+      .catch(() => setRoles([{ id_rol: 1, nombre: "usuario" }, { id_rol: 2, nombre: "admin" }]))
+      .finally(() => setLoadingRoles(false));
+  }, []);
+
+  const handleSave = async () => {
+    if (selectedRoleId === user.id_rol) { onClose(); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await usersApi.updateRole(user.id_usuario, selectedRoleId);
+      onSaved(updated);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "No se pudo actualizar el rol.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <View style={styles.modalOverlay}>
+      <View style={styles.modal}>
+        <Text style={styles.modalTitle}>Cambiar rol · ID {user.id_usuario}</Text>
+        <Text style={[styles.formLabel, { marginBottom: 12 }]}>{user.email}</Text>
+
+        {loadingRoles ? (
+          <View style={{ alignItems: "center", paddingVertical: 16 }}>
+            <ActivityIndicator color={C.greenDark} />
+          </View>
+        ) : (
+          <View style={{ gap: 8, marginBottom: 16 }}>
+            {roles.map((role) => {
+              const active = selectedRoleId === role.id_rol;
+              return (
+                <Pressable
+                  key={role.id_rol}
+                  onPress={() => setSelectedRoleId(role.id_rol)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 8,
+                    borderWidth: 1.5,
+                    borderColor: active ? C.greenDark : C.border,
+                    backgroundColor: active ? "#f0fdf4" : "#fff",
+                  }}
+                >
+                  <View style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    borderWidth: 2,
+                    borderColor: active ? C.greenDark : C.border,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    {active && (
+                      <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.greenDark }} />
+                    )}
+                  </View>
+                  <Text style={{ color: active ? C.greenDark : C.textSub, fontWeight: active ? "600" : "400", fontSize: 14, textTransform: "capitalize" }}>
+                    {role.nombre}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        {error ? (
+          <View style={{ backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca", borderRadius: 8, padding: 10, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Ionicons name="alert-circle-outline" size={16} color="#dc2626" />
+            <Text style={{ color: "#dc2626", fontSize: 12.5, flex: 1 }}>{error}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.modalFooter}>
+          <Pressable style={styles.btnGhost} onPress={onClose} disabled={saving}>
+            <Text style={styles.btnGhostText}>Cancelar</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.btnSave, (saving || loadingRoles) && { opacity: 0.7 }]}
+            onPress={handleSave}
+            disabled={saving || loadingRoles}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.btnSaveText}>Guardar</Text>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // ─── UsersTab ─────────────────────────────────────────────────────────────────
 
 type Modal =
   | { type: "email"; user: User }
   | { type: "profile"; userId: number }
+  | { type: "role"; user: User }
   | null;
 
 type RoleFilter = "all" | "admin" | "user";
@@ -339,6 +457,13 @@ export function UsersTab() {
     setModal(null);
   };
 
+  const handleRoleSaved = (updated: User) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id_usuario === updated.id_usuario ? { ...u, id_rol: updated.id_rol, role: updated.role } : u))
+    );
+    setModal(null);
+  };
+
   return (
     <View>
       {/* Delete confirmation */}
@@ -362,6 +487,13 @@ export function UsersTab() {
         <EditProfileModal
           userId={modal.userId}
           onClose={() => setModal(null)}
+        />
+      )}
+      {modal?.type === "role" && (
+        <ChangeRoleModal
+          user={modal.user}
+          onClose={() => setModal(null)}
+          onSaved={handleRoleSaved}
         />
       )}
 
@@ -436,7 +568,7 @@ export function UsersTab() {
           <Text style={[styles.thText, { flex: 1 }]}>Email</Text>
           <Text style={[styles.thText, { width: 90 }]}>Rol</Text>
           <Text style={[styles.thText, { width: 110 }]}>Registrado</Text>
-          <Text style={[styles.thText, { width: 100, textAlign: "right" }]}>Acciones</Text>
+          <Text style={[styles.thText, { width: 130, textAlign: "right" }]}>Acciones</Text>
         </View>
 
         {/* Rows */}
@@ -503,7 +635,7 @@ export function UsersTab() {
                   {formatDate(user.fecha_creacion)}
                 </Text>
 
-                <View style={[styles.rowActions, { width: 100, justifyContent: "flex-end" }]}>
+                <View style={[styles.rowActions, { width: 130, justifyContent: "flex-end" }]}>
                   <Pressable
                     style={styles.btnIcon}
                     onPress={() => setModal({ type: "email", user })}
@@ -515,6 +647,13 @@ export function UsersTab() {
                     onPress={() => setModal({ type: "profile", userId: user.id_usuario })}
                   >
                     <Ionicons name="person-outline" size={14} color={C.textSub} />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.btnIcon, isMe && { opacity: 0.3 }]}
+                    onPress={() => setModal({ type: "role", user })}
+                    disabled={isMe}
+                  >
+                    <Ionicons name="shield-outline" size={14} color={C.textSub} />
                   </Pressable>
                   <Pressable
                     style={[styles.btnIcon, styles.btnIconRed, isMe && { opacity: 0.3 }]}
