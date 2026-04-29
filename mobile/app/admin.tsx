@@ -1,6 +1,7 @@
 import { Platform, View } from "react-native";
 import AdminScreen from "@/src/screens/AdminScreen/AdminScreen";
 import { WebNavbar } from "@/src/layouts/components/WebNavbar/WebNavbar";
+import { WebFooter } from "@/src/layouts/components/WebFooter/WebFooter";
 
 export default function AdminRoute() {
   if (Platform.OS === "web") {
@@ -8,6 +9,7 @@ export default function AdminRoute() {
       <View style={{ flex: 1 }}>
         <WebNavbar />
         <AdminScreen />
+        <WebFooter />
       </View>
     );
   }

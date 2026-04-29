@@ -313,7 +313,7 @@ export function GuidesTab() {
   }, [fetchGuides]);
 
   const filtered = guides.filter((g) =>
-    g.title.toLowerCase().includes(search.toLowerCase())
+    (g.title ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSaved = (saved: Guide) => {

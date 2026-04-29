@@ -30,7 +30,8 @@ export const styles = StyleSheet.create({
 
   // ─── Sidebar ──────────────────────────────────────────────────────────────────
   sidebar: {
-    width: 220,
+    width: "25%" as never,
+    maxWidth: 280,
     backgroundColor: C.surface,
     borderRightWidth: 1,
     borderRightColor: C.border,
