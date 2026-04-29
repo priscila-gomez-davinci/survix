@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./WebNavbar.styles";
 
@@ -24,17 +24,22 @@ export function WebNavbar() {
   const pathname = usePathname();
   const { isAdmin, logout } = useAuth();
 
+  const doLogout = async () => {
+    await logout();
+    router.replace("/login");
+  };
+
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      // eslint-disable-next-line no-restricted-globals
+      if ((globalThis as unknown as { confirm: (msg: string) => boolean }).confirm("¿Seguro que querés cerrar sesión?")) {
+        void doLogout();
+      }
+      return;
+    }
     Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
       { text: "Cancelar", style: "cancel" },
-      {
-        text: "Salir",
-        style: "destructive",
-        onPress: () => {
-          router.replace("/login");
-          void logout();
-        },
-      },
+      { text: "Salir", style: "destructive", onPress: () => void doLogout() },
     ]);
   };
 

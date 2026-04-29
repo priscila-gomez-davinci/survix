@@ -100,6 +100,9 @@ export type Route = {
   description: string | null;
   distance: number | null;
   duration: number | null;
+  id_actividad?: number;
+  id_dificultad?: number;
+  id_ubicacion?: number;
   images?: RouteImage[];
   points?: RoutePoint[];
 };
@@ -111,8 +114,10 @@ export type RouteImage = {
 
 export type RoutePoint = {
   id: number;
-  coordinates: string;
+  coordinates: string; // WKT format "POINT(lon lat)" returned by GET
+  latlong?: string;    // field returned by API alongside coordinates
   order: number;
+  orden?: number;
 };
 
 export type RouteCreateRequest = {
@@ -277,21 +282,21 @@ export const routesApi = {
   getPoints: (id: number) =>
     request<RoutePoint[]>(`/routes/${id}/points`),
 
-  addPoint: (id: number, latitude: number, longitude: number, order = 1) =>
+  addPoint: (id: number, latitude: number, longitude: number, orden = 1) =>
     request<RoutePoint>(`/routes/${id}/points`, {
       method: "POST",
       body: JSON.stringify({
-        coordinates: `POINT(${longitude} ${latitude})`,
-        order,
+        latlong: `${latitude} ${longitude}`,
+        orden,
       }),
     }, true),
 
-  updatePoint: (pointId: number, latitude: number, longitude: number, order: number) =>
+  updatePoint: (pointId: number, latitude: number, longitude: number, orden: number) =>
     request<RoutePoint>(`/routes/points/${pointId}`, {
       method: "PUT",
       body: JSON.stringify({
-        coordinates: `POINT(${longitude} ${latitude})`,
-        order,
+        latlong: `${latitude} ${longitude}`,
+        orden,
       }),
     }, true),
 

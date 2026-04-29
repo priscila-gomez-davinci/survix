@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
-  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -12,285 +10,292 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { guidesApi, ApiError, type Guide } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
-import { styles } from "../AdminScreen.styles";
+import { styles, C } from "../AdminScreen.styles";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Catalogs ─────────────────────────────────────────────────────────────────
 
-type GuideForm = {
-  titulo: string;
-  descripcion: string;
-  duracion_min: string;
-  id_categoria: string;
-  id_nivel: string;
-};
+const CATEGORY_OPTIONS = [
+  { value: 1, label: "Supervivencia" },
+  { value: 2, label: "Primeros Auxilios" },
+  { value: 3, label: "Equipamiento" },
+  { value: 4, label: "Orientación" },
+  { value: 5, label: "Alimentación en campo" },
+  { value: 6, label: "Técnicas de escalada" },
+];
 
-type FormErrors = {
-  titulo?: string;
-  duracion_min?: string;
-  id_categoria?: string;
-  id_nivel?: string;
-  general?: string;
-};
+const LEVEL_OPTIONS = [
+  { value: 1, label: "Básico" },
+  { value: 2, label: "Intermedio" },
+  { value: 3, label: "Avanzado" },
+];
 
-const emptyForm: GuideForm = {
-  titulo: "",
-  descripcion: "",
-  duracion_min: "",
-  id_categoria: "",
-  id_nivel: "",
-};
-
-function validateCreateForm(form: GuideForm): FormErrors {
-  const e: FormErrors = {};
-  if (!form.titulo.trim()) e.titulo = "El título es obligatorio.";
-  const dur = Number(form.duracion_min);
-  if (!form.duracion_min || isNaN(dur) || dur <= 0) e.duracion_min = "Duración inválida (min).";
-  if (!form.id_categoria || isNaN(Number(form.id_categoria))) e.id_categoria = "Requerido.";
-  if (!form.id_nivel || isNaN(Number(form.id_nivel))) e.id_nivel = "Requerido.";
-  return e;
+function categoryLabel(id: number | null) {
+  return CATEGORY_OPTIONS.find((o) => o.value === id)?.label ?? "—";
 }
 
-// ─── Create form ──────────────────────────────────────────────────────────────
+function levelLabel(id: number | null) {
+  return LEVEL_OPTIONS.find((o) => o.value === id)?.label ?? "—";
+}
 
-function CreateGuideForm({
-  onSuccess,
-  onCancel,
+// ─── SelectField ─────────────────────────────────────────────────────────────
+
+type Option = { value: number; label: string };
+
+function SelectField({
+  value,
+  options,
+  placeholder,
+  onChange,
 }: {
-  onSuccess: (guide: Guide) => void;
-  onCancel: () => void;
+  value: number | null;
+  options: Option[];
+  placeholder: string;
+  onChange: (v: number) => void;
 }) {
-  const [form, setForm] = useState<GuideForm>(emptyForm);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(false);
-
-  const set = (key: keyof GuideForm) => (v: string) => {
-    setForm((f) => ({ ...f, [key]: v }));
-    setErrors((e) => ({ ...e, [key]: undefined }));
-  };
-
-  const handleSubmit = async () => {
-    const errs = validateCreateForm(form);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    setLoading(true);
-    try {
-      const created = await guidesApi.create({
-        titulo: form.titulo.trim(),
-        descripcion: form.descripcion.trim() || undefined,
-        duracion_min: Number(form.duracion_min),
-        id_categoria_guias: Number(form.id_categoria),
-        id_nivel_complejidad: Number(form.id_nivel),
-      });
-      onSuccess(created);
-    } catch (e) {
-      setErrors({ general: e instanceof ApiError ? e.message : "No se pudo crear la guía." });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value);
 
   return (
-    <View style={{ gap: 10 }}>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Título *</Text>
-        <TextInput
-          value={form.titulo}
-          onChangeText={set("titulo")}
-          style={[styles.input, errors.titulo && styles.inputError]}
-          placeholder="Título de la guía"
-          placeholderTextColor="#8A9490"
-          maxLength={150}
-        />
-        {errors.titulo ? <Text style={styles.errorText}>{errors.titulo}</Text> : null}
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Descripción</Text>
-        <TextInput
-          value={form.descripcion}
-          onChangeText={set("descripcion")}
-          style={styles.textArea}
-          placeholder="Descripción de la guía"
-          placeholderTextColor="#8A9490"
-          multiline
-          textAlignVertical="top"
-        />
-      </View>
-
-      <View style={styles.formRow}>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Duración min *</Text>
-          <TextInput
-            value={form.duracion_min}
-            onChangeText={set("duracion_min")}
-            style={[styles.input, errors.duracion_min && styles.inputError]}
-            placeholder="60"
-            placeholderTextColor="#8A9490"
-            keyboardType="numeric"
-          />
-          {errors.duracion_min ? <Text style={styles.errorText}>{errors.duracion_min}</Text> : null}
-        </View>
-      </View>
-
-      <View style={styles.formRow}>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>ID Categoría *</Text>
-          <TextInput
-            value={form.id_categoria}
-            onChangeText={set("id_categoria")}
-            style={[styles.input, errors.id_categoria && styles.inputError]}
-            placeholder="1"
-            placeholderTextColor="#8A9490"
-            keyboardType="numeric"
-          />
-          {errors.id_categoria ? <Text style={styles.errorText}>{errors.id_categoria}</Text> : null}
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>ID Nivel *</Text>
-          <TextInput
-            value={form.id_nivel}
-            onChangeText={set("id_nivel")}
-            style={[styles.input, errors.id_nivel && styles.inputError]}
-            placeholder="1"
-            placeholderTextColor="#8A9490"
-            keyboardType="numeric"
-          />
-          {errors.id_nivel ? <Text style={styles.errorText}>{errors.id_nivel}</Text> : null}
-        </View>
-      </View>
-
-      {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
-
-      <View style={styles.formActions}>
-        <Pressable
-          style={[styles.saveBtn, loading && { opacity: 0.7 }]}
-          onPress={handleSubmit}
-          disabled={loading}
+    <View style={{ zIndex: open ? 500 : 1 }}>
+      <Pressable
+        style={styles.selectField}
+        onPress={() => setOpen((v) => !v)}
+      >
+        <Text
+          style={[
+            styles.selectFieldText,
+            !selected && styles.selectPlaceholder,
+          ]}
+          numberOfLines={1}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Crear</Text>}
-        </Pressable>
-        <Pressable style={styles.cancelBtn} onPress={onCancel} disabled={loading}>
-          <Text style={styles.cancelBtnText}>Cancelar</Text>
-        </Pressable>
-      </View>
+          {selected ? selected.label : placeholder}
+        </Text>
+        <Ionicons
+          name={open ? "chevron-up" : "chevron-down"}
+          size={14}
+          color={C.muted}
+        />
+      </Pressable>
+      {open && (
+        <ScrollView style={styles.selectDropdown} scrollEnabled>
+          {options.map((opt) => (
+            <Pressable
+              key={opt.value}
+              style={[
+                styles.selectOption,
+                opt.value === value && styles.selectOptionActive,
+              ]}
+              onPress={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.selectOptionText,
+                  opt.value === value && styles.selectOptionTextActive,
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
 
-// ─── Edit form ────────────────────────────────────────────────────────────────
+// ─── GuideModal ───────────────────────────────────────────────────────────────
 
-function EditGuideForm({
-  guide,
-  onSuccess,
-  onCancel,
-}: {
-  guide: Guide;
-  onSuccess: (updated: Guide) => void;
-  onCancel: () => void;
-}) {
-  const [titulo, setTitulo] = useState(guide.title);
-  const [descripcion, setDescripcion] = useState(guide.description ?? "");
-  const [duracion, setDuracion] = useState(guide.duration != null ? String(guide.duration) : "");
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(false);
+type GuideModalProps = {
+  mode: "create" | "edit";
+  initial?: Guide;
+  onClose: () => void;
+  onSaved: (g: Guide) => void;
+};
+
+function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
+  const [titulo, setTitulo] = useState(initial?.title ?? "");
+  const [descripcion, setDescripcion] = useState(initial?.description ?? "");
+  const [duracion, setDuracion] = useState(
+    initial?.duration != null ? String(initial.duration) : ""
+  );
+  const [categoryId, setCategoryId] = useState<number | null>(
+    initial?.category_id ?? null
+  );
+  const [levelId, setLevelId] = useState<number | null>(
+    initial?.complexity_level_id ?? null
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const validate = () => {
+    if (!titulo.trim()) return "El título es obligatorio.";
+    if (!categoryId) return "Seleccioná una categoría.";
+    if (!levelId) return "Seleccioná un nivel de complejidad.";
+    const dur = Number(duracion);
+    if (!duracion || isNaN(dur) || dur <= 0) return "Ingresá una duración válida (minutos).";
+    return null;
+  };
 
   const handleSave = async () => {
-    const errs: FormErrors = {};
-    if (!titulo.trim()) errs.titulo = "El título es obligatorio.";
-    const dur = duracion ? Number(duracion) : null;
-    if (dur !== null && (isNaN(dur) || dur <= 0)) errs.duracion_min = "Duración inválida.";
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    setLoading(true);
+    const err = validate();
+    if (err) { setError(err); return; }
+    setSaving(true);
+    setError(null);
     try {
-      const updated = await guidesApi.update(guide.id, {
-        titulo: titulo.trim(),
-        descripcion: descripcion.trim() || undefined,
-        ...(dur ? { duracion_min: dur } : {}),
-      });
-      onSuccess(updated);
+      let result: Guide;
+      if (mode === "create") {
+        result = await guidesApi.create({
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim() || undefined,
+          duracion_min: Number(duracion),
+          id_categoria_guias: categoryId!,
+          id_nivel_complejidad: levelId!,
+        });
+      } else {
+        result = await guidesApi.update(initial!.id, {
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim() || undefined,
+          duracion_min: Number(duracion),
+          id_categoria_guias: categoryId!,
+          id_nivel_complejidad: levelId!,
+        });
+      }
+      onSaved(result);
     } catch (e) {
-      setErrors({ general: e instanceof ApiError ? e.message : "No se pudo guardar." });
+      setError(e instanceof ApiError ? e.message : "No se pudo guardar.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
-    <View style={styles.form}>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Título *</Text>
-        <TextInput
-          value={titulo}
-          onChangeText={(v) => { setTitulo(v); setErrors((e) => ({ ...e, titulo: undefined })); }}
-          style={[styles.input, errors.titulo && styles.inputError]}
-          placeholder="Título de la guía"
-          placeholderTextColor="#8A9490"
-          maxLength={150}
-        />
-        {errors.titulo ? <Text style={styles.errorText}>{errors.titulo}</Text> : null}
-      </View>
+    <View style={styles.modalOverlay}>
+      <View style={styles.modal}>
+        <Text style={styles.modalTitle}>
+          {mode === "create" ? "Nueva guía" : "Editar guía"}
+        </Text>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Descripción</Text>
-        <TextInput
-          value={descripcion}
-          onChangeText={setDescripcion}
-          style={styles.textArea}
-          placeholder="Descripción"
-          placeholderTextColor="#8A9490"
-          multiline
-          textAlignVertical="top"
-        />
-      </View>
+        {/* Título */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Título *</Text>
+          <TextInput
+            value={titulo}
+            onChangeText={setTitulo}
+            style={styles.formInput}
+            placeholder="Nombre de la guía"
+            placeholderTextColor={C.muted}
+            maxLength={150}
+          />
+        </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Duración min</Text>
-        <TextInput
-          value={duracion}
-          onChangeText={(v) => { setDuracion(v); setErrors((e) => ({ ...e, duracion_min: undefined })); }}
-          style={[styles.input, errors.duracion_min && styles.inputError]}
-          placeholder="60"
-          placeholderTextColor="#8A9490"
-          keyboardType="numeric"
-        />
-        {errors.duracion_min ? <Text style={styles.errorText}>{errors.duracion_min}</Text> : null}
-      </View>
+        {/* Categoría + Nivel */}
+        <View style={styles.formRow}>
+          <View style={[styles.formGroup, { zIndex: 600 }]}>
+            <Text style={styles.formLabel}>Categoría *</Text>
+            <SelectField
+              value={categoryId}
+              options={CATEGORY_OPTIONS}
+              placeholder="Seleccionar..."
+              onChange={setCategoryId}
+            />
+          </View>
+          <View style={[styles.formGroup, { zIndex: 400 }]}>
+            <Text style={styles.formLabel}>Nivel *</Text>
+            <SelectField
+              value={levelId}
+              options={LEVEL_OPTIONS}
+              placeholder="Seleccionar..."
+              onChange={setLevelId}
+            />
+          </View>
+        </View>
 
-      {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
+        {/* Duración */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Duración (min) *</Text>
+          <TextInput
+            value={duracion}
+            onChangeText={setDuracion}
+            style={styles.formInput}
+            placeholder="60"
+            placeholderTextColor={C.muted}
+            keyboardType="numeric"
+          />
+        </View>
 
-      <View style={styles.formActions}>
-        <Pressable
-          style={[styles.saveBtn, loading && { opacity: 0.7 }]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Guardar</Text>}
-        </Pressable>
-        <Pressable style={styles.cancelBtn} onPress={onCancel} disabled={loading}>
-          <Text style={styles.cancelBtnText}>Cancelar</Text>
-        </Pressable>
+        {/* Descripción */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Descripción</Text>
+          <TextInput
+            value={descripcion}
+            onChangeText={setDescripcion}
+            style={styles.formTextarea}
+            placeholder="Descripción de la guía..."
+            placeholderTextColor={C.muted}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+
+        {error ? <Text style={styles.generalError}>{error}</Text> : null}
+
+        <View style={styles.modalFooter}>
+          <Pressable style={styles.btnGhost} onPress={onClose} disabled={saving}>
+            <Text style={styles.btnGhostText}>Cancelar</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.btnSave, saving && { opacity: 0.7 }]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.btnSaveText}>
+                {mode === "create" ? "Crear" : "Guardar"}
+              </Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </View>
   );
 }
 
-// ─── Tab ──────────────────────────────────────────────────────────────────────
+// ─── Level badge ──────────────────────────────────────────────────────────────
+
+function LevelBadge({ id }: { id: number | null }) {
+  if (id === 1) return (
+    <View style={[styles.badge, styles.badgeGreen]}>
+      <Text style={[styles.badgeText, styles.badgeGreenText]}>Básico</Text>
+    </View>
+  );
+  if (id === 2) return (
+    <View style={[styles.badge, styles.badgeYellow]}>
+      <Text style={[styles.badgeText, styles.badgeYellowText]}>Intermedio</Text>
+    </View>
+  );
+  if (id === 3) return (
+    <View style={[styles.badge, styles.badgeRed]}>
+      <Text style={[styles.badgeText, styles.badgeRedText]}>Avanzado</Text>
+    </View>
+  );
+  return <Text style={styles.tdMuted}>—</Text>;
+}
+
+// ─── GuidesTab ────────────────────────────────────────────────────────────────
 
 export function GuidesTab() {
   const { refresh: refreshHomeData } = useHomeData();
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editGuide, setEditGuide] = useState<Guide | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchGuides = useCallback(async () => {
@@ -307,167 +312,188 @@ export function GuidesTab() {
     fetchGuides().finally(() => setLoading(false));
   }, [fetchGuides]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchGuides();
-    setRefreshing(false);
-  };
+  const filtered = guides.filter((g) =>
+    g.title.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const handleCreateSuccess = (created: Guide) => {
-    setGuides((prev) => [created, ...prev]);
-    setShowCreate(false);
+  const handleSaved = (saved: Guide) => {
+    if (editGuide) {
+      setGuides((prev) => prev.map((g) => (g.id === saved.id ? saved : g)));
+    } else {
+      setGuides((prev) => [saved, ...prev]);
+    }
+    setModalOpen(false);
+    setEditGuide(null);
     refreshHomeData();
   };
 
-  const handleEditSuccess = (updated: Guide) => {
-    setGuides((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-    setEditingId(null);
-    refreshHomeData();
-  };
-
-  const handleDelete = (guide: Guide) => {
-    Alert.alert(
-      "Eliminar guía",
-      `¿Seguro que querés eliminar "${guide.title}"? Esta acción no se puede deshacer.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: async () => {
-            setDeletingId(guide.id);
-            try {
-              await guidesApi.delete(guide.id);
-              setGuides((prev) => prev.filter((g) => g.id !== guide.id));
-              if (editingId === guide.id) setEditingId(null);
-              refreshHomeData();
-            } catch (e) {
-              Alert.alert(
-                "Error",
-                e instanceof ApiError ? e.message : "No se pudo eliminar la guía."
-              );
-            } finally {
-              setDeletingId(null);
-            }
-          },
-        },
-      ]
+  const handleDelete = async (guide: Guide) => {
+    const ok = (globalThis as unknown as { confirm: (s: string) => boolean }).confirm(
+      `¿Eliminar la guía "${guide.title}"? Esta acción no se puede deshacer.`
     );
+    if (!ok) return;
+    setDeletingId(guide.id);
+    try {
+      await guidesApi.delete(guide.id);
+      setGuides((prev) => prev.filter((g) => g.id !== guide.id));
+      refreshHomeData();
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "No se pudo eliminar la guía.");
+    } finally {
+      setDeletingId(null);
+    }
   };
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#14342B" />
-        <Text style={styles.emptyText}>Cargando guías...</Text>
-      </View>
-    );
-  }
 
   return (
-    <ScrollView
-      style={styles.tabContainer}
-      contentContainerStyle={{ paddingBottom: 40 }}
-      keyboardShouldPersistTaps="handled"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#14342B" />
-      }
-    >
-      <View style={styles.tabHeader}>
-        <Text style={styles.tabTitle}>Guías ({guides.length})</Text>
+    <View>
+      {/* Modal */}
+      {(modalOpen || editGuide) && (
+        <GuideModal
+          mode={editGuide ? "edit" : "create"}
+          initial={editGuide ?? undefined}
+          onClose={() => { setModalOpen(false); setEditGuide(null); }}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {/* Page header */}
+      <View style={styles.pageHeader}>
+        <View>
+          <Text style={styles.pageTitle}>Guías</Text>
+          <Text style={styles.pageSubtitle}>Gestión de guías de supervivencia y actividades</Text>
+        </View>
         <Pressable
-          style={[styles.createButton, showCreate && { backgroundColor: "#8A9490" }]}
-          onPress={() => {
-            setShowCreate((v) => !v);
-            setEditingId(null);
-          }}
+          style={styles.btnPrimary}
+          onPress={() => { setEditGuide(null); setModalOpen(true); }}
         >
-          <Ionicons name={showCreate ? "close" : "add"} size={16} color="#fff" />
-          <Text style={styles.createButtonText}>{showCreate ? "Cancelar" : "Nueva guía"}</Text>
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={styles.btnPrimaryText}>Nueva guía</Text>
         </Pressable>
       </View>
 
-      {/* Create form */}
-      {showCreate && (
-        <View style={[styles.itemCard, styles.itemCardExpanded, { marginBottom: 16 }]}>
-          <Text style={[styles.itemName, { marginBottom: 4 }]}>Nueva guía</Text>
-          <CreateGuideForm
-            onSuccess={handleCreateSuccess}
-            onCancel={() => setShowCreate(false)}
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Total guías</Text>
+          <Text style={styles.statValue}>{loading ? "—" : guides.length}</Text>
+          <Text style={styles.statDelta}>Guías publicadas</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Categorías</Text>
+          <Text style={styles.statValue}>{CATEGORY_OPTIONS.length}</Text>
+          <Text style={styles.statDelta}>Temáticas disponibles</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Niveles</Text>
+          <Text style={styles.statValue}>{LEVEL_OPTIONS.length}</Text>
+          <Text style={styles.statDelta}>Básico · Intermedio · Avanzado</Text>
+        </View>
+      </View>
+
+      {/* Toolbar */}
+      <View style={styles.toolbar}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={15} color={C.muted} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por título..."
+            placeholderTextColor={C.muted}
+            style={styles.searchInput}
           />
         </View>
-      )}
+        <Pressable
+          style={styles.filterBtn}
+          onPress={() => fetchGuides()}
+        >
+          <Ionicons name="refresh-outline" size={14} color={C.textSub} />
+          <Text style={styles.filterBtnText}>Actualizar</Text>
+        </Pressable>
+        <Text style={styles.toolbarCount}>
+          {filtered.length} de {guides.length} guías
+        </Text>
+      </View>
 
-      {fetchError ? (
-        <Text style={[styles.generalError, { paddingHorizontal: 20 }]}>{fetchError}</Text>
-      ) : null}
-
-      {guides.length === 0 && !fetchError ? (
-        <View style={styles.center}>
-          <Ionicons name="book-outline" size={44} color="#C5D4CE" />
-          <Text style={styles.emptyText}>Sin guías</Text>
-          <Text style={styles.emptySubtext}>
-            Creá la primera guía usando el botón de arriba.
-          </Text>
+      {/* Table */}
+      <View style={styles.tableWrap}>
+        {/* Header */}
+        <View style={styles.tableHeader}>
+          <Text style={[styles.thText, { width: 42 }]}>ID</Text>
+          <Text style={[styles.thText, { flex: 1 }]}>Título</Text>
+          <Text style={[styles.thText, { width: 140 }]}>Categoría</Text>
+          <Text style={[styles.thText, { width: 110 }]}>Nivel</Text>
+          <Text style={[styles.thText, { width: 80 }]}>Duración</Text>
+          <Text style={[styles.thText, { width: 80, textAlign: "right" }]}>Acciones</Text>
         </View>
-      ) : (
-        guides.map((guide) => {
-          const isEditing = editingId === guide.id;
-          const isDeleting = deletingId === guide.id;
 
-          return (
+        {/* Rows */}
+        {loading ? (
+          <View style={styles.emptyWrap}>
+            <ActivityIndicator color={C.greenDark} />
+          </View>
+        ) : fetchError ? (
+          <View style={styles.emptyWrap}>
+            <Ionicons name="alert-circle-outline" size={28} color={C.red} />
+            <Text style={[styles.emptyText, { color: C.red }]}>{fetchError}</Text>
+          </View>
+        ) : filtered.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Ionicons name="book-outline" size={32} color={C.border} />
+            <Text style={styles.emptyText}>
+              {search ? "Sin resultados para la búsqueda" : "No hay guías creadas"}
+            </Text>
+          </View>
+        ) : (
+          filtered.map((guide, i) => (
             <View
               key={guide.id}
-              style={[styles.itemCard, isEditing && styles.itemCardExpanded]}
+              style={[
+                styles.tableRow,
+                i === filtered.length - 1 && styles.tableRowLast,
+              ]}
             >
-              <View style={styles.itemRow}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{guide.title}</Text>
-                  <Text style={styles.itemMeta}>
-                    {guide.duration != null ? `${guide.duration} min` : "Sin duración"}
-                    {"  ·  ID: "}
-                    {guide.id}
+              <Text style={[styles.tdMuted, { width: 42 }]}>{guide.id}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tdBold} numberOfLines={1}>{guide.title}</Text>
+                {guide.description ? (
+                  <Text style={styles.tdMuted} numberOfLines={1}>
+                    {guide.description}
                   </Text>
-                </View>
-                {!isEditing && (
-                  <View style={styles.itemActions}>
-                    <Pressable
-                      style={styles.editBtn}
-                      onPress={() => setEditingId(guide.id)}
-                      disabled={isDeleting}
-                    >
-                      <Ionicons name="pencil-outline" size={14} color="#14342B" />
-                      <Text style={styles.editBtnText}>Editar</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.deleteBtn, isDeleting && { opacity: 0.5 }]}
-                      onPress={() => handleDelete(guide)}
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? (
-                        <ActivityIndicator size="small" color="#D93025" />
-                      ) : (
-                        <>
-                          <Ionicons name="trash-outline" size={14} color="#D93025" />
-                          <Text style={styles.deleteBtnText}>Eliminar</Text>
-                        </>
-                      )}
-                    </Pressable>
-                  </View>
-                )}
+                ) : null}
               </View>
-
-              {isEditing && (
-                <EditGuideForm
-                  guide={guide}
-                  onSuccess={handleEditSuccess}
-                  onCancel={() => setEditingId(null)}
-                />
-              )}
+              <Text style={[styles.tdText, { width: 140 }]} numberOfLines={1}>
+                {categoryLabel(guide.category_id)}
+              </Text>
+              <View style={{ width: 110 }}>
+                <LevelBadge id={guide.complexity_level_id} />
+              </View>
+              <Text style={[styles.tdText, { width: 80 }]}>
+                {guide.duration != null ? `${guide.duration} min` : "—"}
+              </Text>
+              <View style={[styles.rowActions, { width: 80, justifyContent: "flex-end" }]}>
+                <Pressable
+                  style={styles.btnIcon}
+                  onPress={() => { setEditGuide(guide); setModalOpen(false); }}
+                  disabled={deletingId === guide.id}
+                >
+                  <Ionicons name="pencil-outline" size={14} color={C.textSub} />
+                </Pressable>
+                <Pressable
+                  style={[styles.btnIcon, styles.btnIconRed]}
+                  onPress={() => handleDelete(guide)}
+                  disabled={deletingId === guide.id}
+                >
+                  {deletingId === guide.id ? (
+                    <ActivityIndicator size="small" color={C.red} />
+                  ) : (
+                    <Ionicons name="trash-outline" size={14} color={C.red} />
+                  )}
+                </Pressable>
+              </View>
             </View>
-          );
-        })
-      )}
-    </ScrollView>
+          ))
+        )}
+      </View>
+    </View>
   );
 }

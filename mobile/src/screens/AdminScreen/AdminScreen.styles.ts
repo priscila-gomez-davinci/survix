@@ -1,372 +1,753 @@
 import { StyleSheet } from "react-native";
 
+// Design tokens matching the HTML mockup
+export const C = {
+  greenDark: "#1d3828",
+  greenMid: "#2a4f38",
+  greenLight: "#e6efe9",
+  border: "#dde5df",
+  muted: "#6b7a70",
+  bg: "#f4f5f4",
+  surface: "#ffffff",
+  red: "#dc2626",
+  redLight: "#fef2f2",
+  redBorder: "#fecaca",
+  blue: "#2563eb",
+  blueHover: "#1d4fd8",
+  yellow: "#d97706",
+  yellowLight: "#fffbeb",
+  text: "#1a2a1e",
+  textSub: "#3a4a3e",
+};
+
 export const styles = StyleSheet.create({
-  safeArea: {
+  // ─── Outer shell ─────────────────────────────────────────────────────────────
+  root: {
     flex: 1,
-    backgroundColor: "#F5F6F5",
+    backgroundColor: C.bg,
   },
 
-  // ─── Header ──────────────────────────────────────────────────────────────────
-  header: {
-    backgroundColor: "#103D34",
-    paddingHorizontal: 24,
-    paddingVertical: 18,
+  // ─── Topbar ───────────────────────────────────────────────────────────────────
+  topbar: {
+    height: 56,
+    backgroundColor: C.greenDark,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 28,
+    gap: 0,
+    zIndex: 100,
+  },
+  topbarLogo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginRight: 40,
+  },
+  topbarLogoText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  topbarRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginLeft: "auto" as never,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    justifyContent: "center",
+  topbarRoleText: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 12,
+  },
+  topbarAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.greenMid,
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.2)",
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    flex: 1,
-  },
-  adminBadge: {
-    backgroundColor: "#18B678",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  adminBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+  topbarAvatarText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 
-  // ─── Tabs ─────────────────────────────────────────────────────────────────────
-  tabs: {
+  // ─── Body ─────────────────────────────────────────────────────────────────────
+  body: {
+    flex: 1,
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E8EDEB",
-    paddingHorizontal: 8,
   },
-  tab: {
+
+  // ─── Sidebar ──────────────────────────────────────────────────────────────────
+  sidebar: {
+    width: 220,
+    backgroundColor: C.surface,
+    borderRightWidth: 1,
+    borderRightColor: C.border,
+    paddingVertical: 20,
+  },
+  sidebarLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    color: C.muted,
+    textTransform: "uppercase",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  sidebarItem: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    borderLeftWidth: 3,
+    borderLeftColor: "transparent",
+  },
+  sidebarItemActive: {
+    backgroundColor: C.greenLight,
+    borderLeftColor: C.greenDark,
+  },
+  sidebarItemText: {
+    fontSize: 13.5,
+    fontWeight: "500",
+    color: C.textSub,
+    flex: 1,
+  },
+  sidebarItemTextActive: {
+    color: C.greenDark,
+    fontWeight: "600",
+  },
+  sidebarBadge: {
+    backgroundColor: C.greenDark,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    minWidth: 22,
+    alignItems: "center",
+  },
+  sidebarBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  // ─── Main ─────────────────────────────────────────────────────────────────────
+  main: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  mainContent: {
+    padding: 28,
+    paddingBottom: 48,
+  },
+
+  // ─── Page header ──────────────────────────────────────────────────────────────
+  pageHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: C.greenDark,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: C.muted,
+    marginTop: 2,
+  },
+
+  // ─── Stats row ────────────────────────────────────────────────────────────────
+  statsRow: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    padding: 18,
     gap: 6,
+  },
+  statLabel: {
+    fontSize: 11.5,
+    fontWeight: "600",
+    color: C.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: C.greenDark,
+  },
+  statDelta: {
+    fontSize: 12,
+    color: "#16a34a",
+    fontWeight: "500",
+  },
+
+  // ─── Section tabs ─────────────────────────────────────────────────────────────
+  sectionTabs: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    marginBottom: 20,
+  },
+  sectionTab: {
     paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingVertical: 8,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  tabActive: {
-    borderBottomColor: "#14342B",
+  sectionTabActive: {
+    borderBottomColor: C.greenDark,
   },
-  tabText: {
-    fontSize: 14,
+  sectionTabText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: C.muted,
+  },
+  sectionTabTextActive: {
+    color: C.greenDark,
     fontWeight: "600",
-    color: "#8A9490",
-  },
-  tabTextActive: {
-    color: "#14342B",
-    fontWeight: "700",
-  },
-  content: {
-    flex: 1,
   },
 
-  // ─── Tab container ────────────────────────────────────────────────────────────
-  tabContainer: {
-    flex: 1,
+  // ─── Toolbar ──────────────────────────────────────────────────────────────────
+  toolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
   },
-  tabHeader: {
+  searchBox: {
+    flex: 1,
+    maxWidth: 320,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 36,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: C.text,
+    outlineWidth: 0,
+  } as never,
+  filterBtn: {
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  filterBtnText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: C.textSub,
+  },
+  toolbarCount: {
+    marginLeft: "auto" as never,
+    fontSize: 12,
+    color: C.muted,
+  },
+
+  // ─── Primary / danger buttons ─────────────────────────────────────────────────
+  btnPrimary: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: C.blue,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  btnPrimaryText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  btnIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnIconRed: {
+    borderColor: C.redBorder,
+    backgroundColor: C.redLight,
+  },
+
+  // ─── Table ────────────────────────────────────────────────────────────────────
+  tableWrap: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  tableHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f9fbf9",
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  thText: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: C.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.9,
+  },
+  tableRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f4f1",
+  },
+  tableRowLast: {
+    borderBottomWidth: 0,
+  },
+  tdText: {
+    fontSize: 13.5,
+    color: C.text,
+  },
+  tdMuted: {
+    fontSize: 12.5,
+    color: C.muted,
+  },
+  tdBold: {
+    fontSize: 13.5,
+    fontWeight: "600",
+    color: C.text,
+  },
+
+  // ─── User cell ────────────────────────────────────────────────────────────────
+  userCell: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  cellName: {
+    fontSize: 13.5,
+    fontWeight: "600",
+    color: C.text,
+  },
+  cellSub: {
+    fontSize: 12,
+    color: C.muted,
+  },
+
+  // ─── Badges ───────────────────────────────────────────────────────────────────
+  badge: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  badgeText: {
+    fontSize: 11.5,
+    fontWeight: "600",
+  },
+  badgeGreen: { backgroundColor: "#dcfce7" },
+  badgeGreenText: { color: "#15803d" },
+  badgeBlue: { backgroundColor: "#dbeafe" },
+  badgeBlueText: { color: "#1d4ed8" },
+  badgeYellow: { backgroundColor: "#fef3c7" },
+  badgeYellowText: { color: "#b45309" },
+  badgeRed: { backgroundColor: "#fee2e2" },
+  badgeRedText: { color: "#b91c1c" },
+  badgeGray: { backgroundColor: "#f3f4f6" },
+  badgeGrayText: { color: "#4b5563" },
+
+  // ─── Row actions ──────────────────────────────────────────────────────────────
+  rowActions: {
+    flexDirection: "row",
+    gap: 6,
+  },
+
+  // ─── Pagination ───────────────────────────────────────────────────────────────
+  pagination: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
   },
-  tabTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#14342B",
-  },
-  createButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#14342B",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  createButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 13,
+  paginationText: {
+    fontSize: 12.5,
+    color: C.muted,
   },
 
-  // ─── Item cards ───────────────────────────────────────────────────────────────
-  itemCard: {
-    backgroundColor: "#FFFFFF",
+  // ─── Modal ────────────────────────────────────────────────────────────────────
+  modalOverlay: {
+    position: "absolute" as never,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 200,
+  },
+  modal: {
+    backgroundColor: C.surface,
     borderRadius: 14,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    padding: 14,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#E8EDEB",
+    padding: 28,
+    width: 480,
+    maxWidth: "90%" as never,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 40,
+    elevation: 20,
   },
-  itemCardExpanded: {
-    borderColor: "#14342B",
-    borderWidth: 2,
-  },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  itemName: {
-    fontSize: 15,
+  modalTitle: {
+    fontSize: 17,
     fontWeight: "700",
-    color: "#14342B",
+    color: C.greenDark,
+    marginBottom: 20,
   },
-  itemMeta: {
-    fontSize: 13,
-    color: "#8A9490",
-  },
-  itemActions: {
+  modalFooter: {
     flexDirection: "row",
-    gap: 8,
-    flexShrink: 0,
-  },
-  editBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#E8EDEB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  editBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#14342B",
-  },
-  deleteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#FFF0F0",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  deleteBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#D93025",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 6,
   },
 
   // ─── Form fields ──────────────────────────────────────────────────────────────
-  form: {
-    gap: 12,
-    marginTop: 8,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#E8EDEB",
-  },
   formRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 14,
+    marginBottom: 14,
   },
-  fieldGroup: {
-    gap: 5,
+  formGroup: {
     flex: 1,
+    gap: 5,
+    marginBottom: 14,
   },
-  label: {
+  formLabel: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#14342B",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+    fontWeight: "600",
+    color: C.textSub,
   },
-  input: {
-    height: 44,
-    borderRadius: 10,
+  formInput: {
+    height: 38,
     borderWidth: 1,
-    borderColor: "#D7DEDB",
-    backgroundColor: "#F5F6F5",
+    borderColor: C.border,
+    borderRadius: 8,
     paddingHorizontal: 12,
-    color: "#14342B",
-    fontSize: 14,
-  },
-  inputError: {
-    borderColor: "#D93025",
-    backgroundColor: "#FFF5F5",
-  },
-  textArea: {
-    minHeight: 80,
-    borderRadius: 10,
+    fontSize: 13,
+    color: C.text,
+    backgroundColor: C.surface,
+    outlineWidth: 0,
+  } as never,
+  formTextarea: {
     borderWidth: 1,
-    borderColor: "#D7DEDB",
-    backgroundColor: "#F5F6F5",
+    borderColor: C.border,
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: "#14342B",
-    fontSize: 14,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: C.text,
+    backgroundColor: C.surface,
+    minHeight: 72,
+    outlineWidth: 0,
+  } as never,
+  formInputFocus: {
+    borderColor: C.greenDark,
   },
-  errorText: {
-    fontSize: 12,
-    color: "#D93025",
+  formError: {
+    fontSize: 11.5,
+    color: C.red,
     marginTop: 2,
   },
   generalError: {
-    fontSize: 13,
-    color: "#D93025",
+    fontSize: 12.5,
+    color: C.red,
     textAlign: "center",
     marginTop: 4,
-  },
-  formActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  saveBtn: {
-    flex: 1,
-    backgroundColor: "#14342B",
-    borderRadius: 10,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  saveBtnText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: "#E8EDEB",
-    borderRadius: 10,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cancelBtnText: {
-    color: "#14342B",
-    fontWeight: "700",
-    fontSize: 14,
+    marginBottom: 4,
   },
 
-  // ─── Empty / loading states ───────────────────────────────────────────────────
-  center: {
-    flex: 1,
-    justifyContent: "center",
+  // ─── Select field ─────────────────────────────────────────────────────────────
+  selectField: {
+    height: 38,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 60,
-    paddingHorizontal: 32,
+    justifyContent: "space-between",
+    backgroundColor: C.surface,
+  },
+  selectFieldText: {
+    fontSize: 13,
+    color: C.text,
+    flex: 1,
+  },
+  selectPlaceholder: {
+    color: C.muted,
+  },
+  selectDropdown: {
+    position: "absolute" as never,
+    top: 40,
+    left: 0,
+    right: 0,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 8,
+    zIndex: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+    maxHeight: 200,
+    overflow: "hidden",
+  },
+  selectOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f4f1",
+  },
+  selectOptionActive: {
+    backgroundColor: C.greenLight,
+  },
+  selectOptionText: {
+    fontSize: 13,
+    color: C.text,
+  },
+  selectOptionTextActive: {
+    color: C.greenDark,
+    fontWeight: "600",
+  },
+
+  // ─── Ghost / cancel button ────────────────────────────────────────────────────
+  btnGhost: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnGhostText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: C.textSub,
+  },
+  btnSave: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: C.blue,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  btnSaveText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
+
+  // ─── Empty / loading ──────────────────────────────────────────────────────────
+  emptyWrap: {
+    paddingVertical: 48,
+    alignItems: "center",
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#8A9490",
-  },
-  emptySubtext: {
     fontSize: 14,
-    color: "#8A9490",
-    textAlign: "center",
-    lineHeight: 20,
+    color: C.muted,
+    marginTop: 8,
   },
 
-  // ─── Users tab specifics ──────────────────────────────────────────────────────
-  searchBox: {
+  // ─── Section divider ─────────────────────────────────────────────────────────
+  sectionDivider: {
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    paddingTop: 16,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  sectionDividerText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: C.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+
+  // ─── Sub-panel (points) ───────────────────────────────────────────────────────
+  subPanel: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginTop: 12,
+  },
+  subPanelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f9fbf9",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  subPanelTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: C.textSub,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  subPanelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f4f1",
+    gap: 8,
+  },
+
+  // ─── Search users section ─────────────────────────────────────────────────────
+  searchSection: {
     flexDirection: "row",
     gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    marginBottom: 20,
   },
-  searchInput: {
+  searchSectionInput: {
     flex: 1,
     height: 44,
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#D7DEDB",
-    backgroundColor: "#FFFFFF",
+    borderColor: C.border,
+    borderRadius: 8,
     paddingHorizontal: 14,
-    color: "#14342B",
     fontSize: 14,
-  },
-  searchBtn: {
-    backgroundColor: "#14342B",
-    borderRadius: 10,
-    paddingHorizontal: 18,
+    color: C.text,
+    backgroundColor: C.surface,
+    outlineWidth: 0,
+  } as never,
+  searchSectionBtn: {
     height: 44,
-    justifyContent: "center",
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    backgroundColor: C.greenDark,
     alignItems: "center",
+    justifyContent: "center",
   },
-  searchBtnText: {
-    color: "#FFFFFF",
+  searchSectionBtnText: {
+    color: "#fff",
     fontWeight: "700",
     fontSize: 14,
   },
-  userCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    marginHorizontal: 16,
-    padding: 16,
-    gap: 14,
+
+  // ─── User info card ───────────────────────────────────────────────────────────
+  infoCard: {
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E8EDEB",
+    borderColor: C.border,
+    borderRadius: 10,
+    padding: 20,
+    gap: 12,
   },
-  userCardSection: {
+  infoSection: {
     gap: 8,
   },
-  userCardSectionTitle: {
-    fontSize: 11,
+  infoSectionLabel: {
+    fontSize: 10.5,
     fontWeight: "700",
     color: "#10A95A",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: 2,
   },
-  userDataRow: {
+  infoRow: {
     flexDirection: "row",
     gap: 8,
     alignItems: "flex-start",
   },
-  userDataLabel: {
+  infoKey: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#8A9490",
+    color: C.muted,
     width: 90,
     flexShrink: 0,
   },
-  userDataValue: {
+  infoValue: {
     fontSize: 13,
-    color: "#14342B",
+    color: C.text,
     flex: 1,
   },
-  roleBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  infoSeparator: {
+    height: 1,
+    backgroundColor: C.border,
+    marginVertical: 8,
   },
-  roleBadgeText: {
-    fontSize: 12,
+
+  // ─── "Not available on mobile" ────────────────────────────────────────────────
+  mobileMessage: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    padding: 32,
+  },
+  mobileMessageText: {
+    fontSize: 16,
     fontWeight: "700",
-  },
-  sectionDivider: {
-    borderTopWidth: 1,
-    borderTopColor: "#E8EDEB",
-    paddingTop: 14,
-    marginTop: 4,
+    color: C.muted,
+    textAlign: "center",
   },
 });
