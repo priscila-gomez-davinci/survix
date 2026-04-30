@@ -12,6 +12,7 @@ import { guidesApi, catalogApi, ApiError, type Guide, type CatalogItem } from "@
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles, C } from "../AdminScreen.styles";
 import { DeleteModal } from "../DeleteModal";
+import { AppDialog } from "@/src/components/AppDialog";
 
 type Option = { value: number; label: string };
 
@@ -332,6 +333,7 @@ export function GuidesTab() {
   const [editGuide, setEditGuide] = useState<Guide | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<Option[]>(FALLBACK_CATEGORY);
   const [levelOptions, setLevelOptions] = useState<Option[]>(FALLBACK_LEVEL);
 
@@ -384,7 +386,7 @@ export function GuidesTab() {
           setGuides((prev) => prev.filter((g) => g.id !== guide.id));
           refreshHomeData();
         } catch (e) {
-          alert(e instanceof ApiError ? e.message : "No se pudo eliminar la guía.");
+          setErrorDialog(e instanceof ApiError ? e.message : "No se pudo eliminar la guía.");
         } finally {
           setDeletingId(null);
         }
@@ -400,6 +402,17 @@ export function GuidesTab() {
           label={deleteTarget.label}
           onConfirm={deleteTarget.onConfirm}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {errorDialog && (
+        <AppDialog
+          title="No se pudo eliminar"
+          message={errorDialog}
+          variant="danger"
+          icon="alert-circle-outline"
+          confirmLabel="Entendido"
+          onConfirm={() => setErrorDialog(null)}
         />
       )}
 

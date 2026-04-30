@@ -11,6 +11,7 @@ import { usersApi, profilesApi, catalogApi, ApiError, type User, type Profile, t
 import { useAuth } from "@/src/context/AuthContext";
 import { styles, C } from "../AdminScreen.styles";
 import { DeleteModal } from "../DeleteModal";
+import { AppDialog } from "@/src/components/AppDialog";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -406,6 +407,7 @@ export function UsersTab() {
   const [modal, setModal] = useState<Modal>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ label: string; onConfirm: () => void } | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -448,7 +450,7 @@ export function UsersTab() {
           await usersApi.delete(user.id_usuario);
           setUsers((prev) => prev.filter((u) => u.id_usuario !== user.id_usuario));
         } catch (e) {
-          alert(e instanceof ApiError ? e.message : "No se pudo eliminar el usuario.");
+          setErrorDialog(e instanceof ApiError ? e.message : "No se pudo eliminar el usuario.");
         } finally {
           setDeletingId(null);
         }
@@ -478,6 +480,17 @@ export function UsersTab() {
           label={deleteTarget.label}
           onConfirm={deleteTarget.onConfirm}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {errorDialog && (
+        <AppDialog
+          title="No se pudo eliminar"
+          message={errorDialog}
+          variant="danger"
+          icon="alert-circle-outline"
+          confirmLabel="Entendido"
+          onConfirm={() => setErrorDialog(null)}
         />
       )}
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Survix",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,7 +30,7 @@
       "package": "com.pfeuersturm.mobile"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./public/favicon.ico"
     },
     "plugins": [
       "expo-router",

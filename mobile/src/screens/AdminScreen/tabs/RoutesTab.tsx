@@ -12,6 +12,7 @@ import { routesApi, catalogApi, ApiError, type Route, type RoutePoint, type Cata
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles, C } from "../AdminScreen.styles";
 import { DeleteModal } from "../DeleteModal";
+import { AppDialog } from "@/src/components/AppDialog";
 
 // ─── Fallback catalog options ─────────────────────────────────────────────────
 
@@ -643,6 +644,7 @@ export function RoutesTab() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ label: string; onConfirm: () => void } | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [activityOptions, setActivityOptions] = useState<SelectOption[]>(FALLBACK_ACTIVITY);
   const [difficultyOptions, setDifficultyOptions] = useState<SelectOption[]>(FALLBACK_DIFFICULTY);
 
@@ -687,7 +689,7 @@ export function RoutesTab() {
           if (expandedId === route.id) setExpandedId(null);
           refreshHomeData();
         } catch (e) {
-          alert(e instanceof ApiError ? e.message : "No se pudo eliminar.");
+          setErrorDialog(e instanceof ApiError ? e.message : "No se pudo eliminar.");
         } finally {
           setDeletingId(null);
         }
@@ -744,6 +746,17 @@ export function RoutesTab() {
           label={deleteTarget.label}
           onConfirm={deleteTarget.onConfirm}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {errorDialog && (
+        <AppDialog
+          title="No se pudo eliminar"
+          message={errorDialog}
+          variant="danger"
+          icon="alert-circle-outline"
+          confirmLabel="Entendido"
+          onConfirm={() => setErrorDialog(null)}
         />
       )}
 

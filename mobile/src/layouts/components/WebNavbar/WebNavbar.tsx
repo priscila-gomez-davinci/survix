@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
+import { AppDialog } from "@/src/components/AppDialog";
 import { styles } from "./WebNavbar.styles";
 
 const AVATAR_BG = "#2a4f38";
@@ -21,78 +22,6 @@ const navRoutes: NavRoute[] = [
   { path: "/blog",    icon: "newspaper-outline", iconActive: "newspaper", label: "Blog" },
   { path: "/profile", icon: "person-outline",    iconActive: "person",    label: "Perfil" },
 ];
-
-// ─── Logout confirmation modal ────────────────────────────────────────────────
-
-function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <View style={{
-      position: "fixed" as never,
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.45)",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 9999,
-    }}>
-      <View style={{
-        backgroundColor: "#fff",
-        borderRadius: 14,
-        padding: 28,
-        width: 340,
-        maxWidth: "90%" as never,
-        alignItems: "center",
-        gap: 8,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 24,
-        elevation: 12,
-      }}>
-        {/* Icon */}
-        <View style={{
-          width: 52, height: 52, borderRadius: 26,
-          backgroundColor: "#fee2e2",
-          alignItems: "center", justifyContent: "center",
-          marginBottom: 4,
-        }}>
-          <Ionicons name="log-out-outline" size={26} color="#dc2626" />
-        </View>
-
-        <Text style={{ fontSize: 17, fontWeight: "700", color: "#1a2a1e" }}>
-          Cerrar sesión
-        </Text>
-        <Text style={{ fontSize: 13, color: "#6b7a70", textAlign: "center", marginBottom: 8 }}>
-          ¿Estás seguro que querés salir de tu cuenta?
-        </Text>
-
-        {/* Buttons */}
-        <View style={{ flexDirection: "row", gap: 10, width: "100%" as never }}>
-          <Pressable
-            style={({ pressed }) => ({
-              flex: 1, height: 40, borderRadius: 8,
-              borderWidth: 1, borderColor: "#dde5df",
-              alignItems: "center", justifyContent: "center",
-              backgroundColor: pressed ? "#f4f5f4" : "transparent",
-            })}
-            onPress={onCancel}
-          >
-            <Text style={{ fontSize: 13, fontWeight: "500", color: "#3a4a3e" }}>Cancelar</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => ({
-              flex: 1, height: 40, borderRadius: 8,
-              alignItems: "center", justifyContent: "center",
-              backgroundColor: pressed ? "#b91c1c" : "#dc2626",
-            })}
-            onPress={onConfirm}
-          >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>Salir</Text>
-          </Pressable>
-        </View>
-      </View>
-    </View>
-  );
-}
 
 // ─── WebNavbar ────────────────────────────────────────────────────────────────
 
@@ -123,7 +52,11 @@ export function WebNavbar() {
     <View style={styles.navbar}>
       {/* Logout modal */}
       {showLogoutModal && (
-        <LogoutModal
+        <AppDialog
+          title="Cerrar sesión"
+          message="¿Estás seguro que querés salir de tu cuenta?"
+          icon="log-out-outline"
+          confirmLabel="Salir"
           onConfirm={() => { setShowLogoutModal(false); void doLogout(); }}
           onCancel={() => setShowLogoutModal(false)}
         />
