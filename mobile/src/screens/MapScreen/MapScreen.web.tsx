@@ -12,7 +12,7 @@ declare global {
 
 export default function MapScreen() {
   const router = useRouter();
-  const { activities } = useHomeData();
+  const { activities, guides } = useHomeData();
   const mapContainerRef = useRef<any>(null);
   const gMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -46,7 +46,7 @@ export default function MapScreen() {
     };
   }, [scriptReady]);
 
-  // Sync markers whenever activities or map readiness changes
+  // Sync markers whenever activities/guides or map readiness changes
   useEffect(() => {
     if (!gMapRef.current) return;
     const gm = window.google.maps;
@@ -54,67 +54,73 @@ export default function MapScreen() {
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    activities
-      .filter((a) => a.coordinates)
-      .forEach((activity) => {
-        const marker = new gm.Marker({
-          position: {
-            lat: activity.coordinates!.latitude,
-            lng: activity.coordinates!.longitude,
-          },
-          map: gMapRef.current,
-          title: activity.title,
-          icon: {
-            path: gm.SymbolPath.CIRCLE,
-            fillColor: "#14342B",
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
-            scale: 9,
-          },
-        });
-
-        const infoWindow = new gm.InfoWindow({
-          content: `
-            <div style="font-family:system-ui,sans-serif;padding:4px 6px;max-width:200px;">
-              <div style="font-weight:700;color:#14342B;font-size:13px;">${activity.title}</div>
-              <div style="color:#6D7673;font-size:12px;margin-top:2px;">${activity.subtitle ?? ""}</div>
-              <div id="map-nav-${activity.id}" style="color:#10A95A;font-weight:700;font-size:12px;margin-top:6px;cursor:pointer;">
-                Ver detalle →
-              </div>
-            </div>
-          `,
-        });
-
-        gm.event.addListenerOnce(infoWindow, "domready", () => {
-          document.getElementById(`map-nav-${activity.id}`)
-            ?.addEventListener("click", () => {
-              router.push({
-                pathname: "/detail",
-                params: {
-                  id: String(activity.id),
-                  type: "activity",
-                  title: activity.title,
-                  subtitle: activity.subtitle ?? "",
-                  description: activity.description ?? "",
-                  image: activity.image ?? "",
-                },
-              });
-            });
-        });
-
-        marker.addListener("click", () => {
-          infoWindow.open(gMapRef.current, marker);
-        });
-
-        markersRef.current.push(marker);
+    const addMarker = (
+      item: { id: string; title: string; subtitle?: string; description?: string; image?: string; coordinates?: { latitude: number; longitude: number } },
+      color: string,
+      type: "activity" | "guide",
+    ) => {
+      if (!item.coordinates) return;
+      const marker = new gm.Marker({
+        position: {
+          lat: item.coordinates.latitude,
+          lng: item.coordinates.longitude,
+        },
+        map: gMapRef.current,
+        title: item.title,
+        icon: {
+          path: gm.SymbolPath.CIRCLE,
+          fillColor: color,
+          fillOpacity: 1,
+          strokeColor: "#FFFFFF",
+          strokeWeight: 2,
+          scale: 9,
+        },
       });
+
+      const infoWindow = new gm.InfoWindow({
+        content: `
+          <div style="font-family:system-ui,sans-serif;padding:4px 6px;max-width:200px;">
+            <div style="font-weight:700;color:${color};font-size:13px;">${item.title}</div>
+            <div style="color:#6D7673;font-size:12px;margin-top:2px;">${item.subtitle ?? ""}</div>
+            <div id="map-nav-${type}-${item.id}" style="color:#10A95A;font-weight:700;font-size:12px;margin-top:6px;cursor:pointer;">
+              Ver detalle →
+            </div>
+          </div>
+        `,
+      });
+
+      gm.event.addListenerOnce(infoWindow, "domready", () => {
+        document.getElementById(`map-nav-${type}-${item.id}`)
+          ?.addEventListener("click", () => {
+            router.push({
+              pathname: "/detail",
+              params: {
+                id: String(item.id),
+                type,
+                title: item.title,
+                subtitle: item.subtitle ?? "",
+                description: item.description ?? "",
+                image: item.image ?? "",
+              },
+            });
+          });
+      });
+
+      marker.addListener("click", () => {
+        infoWindow.open(gMapRef.current, marker);
+      });
+
+      markersRef.current.push(marker);
+    };
+
+    activities.forEach((a) => addMarker(a, "#14342B", "activity"));
+    guides.forEach((g) => addMarker(g, "#D97706", "guide"));
 
     return () => {
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
     };
-  }, [activities, scriptReady, router]);
+  }, [activities, guides, scriptReady, router]);
 
   return (
     <SafeAreaView style={styles.safeArea}>

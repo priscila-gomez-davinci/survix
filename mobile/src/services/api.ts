@@ -111,6 +111,8 @@ export type Route = {
   id_actividad?: number;
   id_dificultad?: number;
   id_ubicacion?: number;
+  latitud?: number | null;
+  longitud?: number | null;
   images?: RouteImage[];
   points?: RoutePoint[];
 };
@@ -122,10 +124,9 @@ export type RouteImage = {
 
 export type RoutePoint = {
   id: number;
-  coordinates: string;
-  latlong?: string;
+  lat: number;
+  lng: number;
   order: number;
-  orden?: number;
 };
 
 export type RouteCreateRequest = {
@@ -136,6 +137,8 @@ export type RouteCreateRequest = {
   descripcion: string;
   distancia_km: number;
   duracion_min: number;
+  latitud?: number | null;
+  longitud?: number | null;
 };
 
 export type Guide = {
@@ -145,6 +148,8 @@ export type Guide = {
   duration: number | null;
   category_id: number | null;
   complexity_level_id: number | null;
+  latitud?: number | null;
+  longitud?: number | null;
   steps?: GuideStep[];
   products?: GuideProduct[];
 };
@@ -169,6 +174,8 @@ export type GuideCreateRequest = {
   duracion_min: number;
   id_categoria_guias: number;
   id_nivel_complejidad: number;
+  latitud?: number | null;
+  longitud?: number | null;
 };
 
 export type GuideStepRequest = {
@@ -200,6 +207,8 @@ type _BackendRoute = {
   id_actividad: number;
   id_dificultad: number;
   id_ubicacion: number;
+  latitud?: number | null;
+  longitud?: number | null;
 };
 
 type _BackendGuide = {
@@ -209,6 +218,16 @@ type _BackendGuide = {
   duracion_min: number;
   id_categoria_guias: number;
   id_nivel_complejidad: number;
+  latitud?: number | null;
+  longitud?: number | null;
+};
+
+type _BackendPoint = {
+  id_ruta_punto: number;
+  lat: number;
+  lng: number;
+  orden: number;
+  id_rutas: number;
 };
 
 function _mapRoute(r: _BackendRoute): Route {
@@ -221,6 +240,8 @@ function _mapRoute(r: _BackendRoute): Route {
     id_actividad: r.id_actividad,
     id_dificultad: r.id_dificultad,
     id_ubicacion: r.id_ubicacion,
+    latitud: r.latitud,
+    longitud: r.longitud,
   };
 }
 
@@ -232,6 +253,17 @@ function _mapGuide(g: _BackendGuide): Guide {
     duration: g.duracion_min,
     category_id: g.id_categoria_guias,
     complexity_level_id: g.id_nivel_complejidad,
+    latitud: g.latitud,
+    longitud: g.longitud,
+  };
+}
+
+function _mapPoint(p: _BackendPoint): RoutePoint {
+  return {
+    id: p.id_ruta_punto,
+    lat: p.lat,
+    lng: p.lng,
+    order: p.orden,
   };
 }
 
@@ -290,6 +322,23 @@ export const catalogApi = {
   activities: () => request<CatalogItem[]>("/activities"),
   difficulties: () => request<CatalogItem[]>("/difficulties"),
   roles: () => request<RoleItem[]>("/roles"),
+  guideCategories: () => request<CatalogItem[]>("/guide-categories"),
+  guideLevels: () => request<CatalogItem[]>("/guide-levels"),
+
+  createActivity: (nombre: string) =>
+    request<CatalogItem>("/activities", {
+      method: "POST",
+      body: JSON.stringify({ nombre }),
+    }, true),
+
+  updateActivity: (id: number, nombre: string) =>
+    request<CatalogItem>(`/activities/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ nombre }),
+    }, true),
+
+  deleteActivity: (id: number) =>
+    request<void>(`/activities/${id}`, { method: "DELETE" }, true),
 };
 
 // ─── Profiles ─────────────────────────────────────────────────────────────────
@@ -372,26 +421,32 @@ export const routesApi = {
       body: JSON.stringify({ rating, comment }),
     }, true),
 
-  getPoints: (id: number) =>
-    request<RoutePoint[]>(`/routes/${id}/points`),
+  getPoints: async (id: number): Promise<RoutePoint[]> => {
+    const raw = await request<_BackendPoint[]>(`/routes/${id}/points`);
+    return raw.map(_mapPoint);
+  },
 
-  addPoint: (id: number, latitude: number, longitude: number, orden = 1) =>
-    request<RoutePoint>(`/routes/${id}/points`, {
+  addPoint: async (id: number, latitude: number, longitude: number, orden = 1): Promise<RoutePoint> => {
+    const raw = await request<_BackendPoint>(`/routes/${id}/points`, {
       method: "POST",
       body: JSON.stringify({
-        latlong: `${latitude} ${longitude}`,
+        latlong: `POINT(${longitude} ${latitude})`,
         orden,
       }),
-    }, true),
+    }, true);
+    return _mapPoint(raw);
+  },
 
-  updatePoint: (pointId: number, latitude: number, longitude: number, orden: number) =>
-    request<RoutePoint>(`/routes/points/${pointId}`, {
+  updatePoint: async (pointId: number, latitude: number, longitude: number, orden: number): Promise<RoutePoint> => {
+    const raw = await request<_BackendPoint>(`/routes/points/${pointId}`, {
       method: "PUT",
       body: JSON.stringify({
-        latlong: `${latitude} ${longitude}`,
+        latlong: `POINT(${longitude} ${latitude})`,
         orden,
       }),
-    }, true),
+    }, true);
+    return _mapPoint(raw);
+  },
 
   deletePoint: (pointId: number) =>
     request<void>(`/routes/points/${pointId}`, { method: "DELETE" }, true),

@@ -20,6 +20,7 @@ type ProfileForm = {
   email: string;
   location: string;
   bio: string;
+  photo_url: string;
 };
 
 function profileToForm(profile: Profile | null, email: string): ProfileForm {
@@ -29,6 +30,7 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
     email,
     location: profile?.ubicacion ?? "",
     bio: profile?.bio ?? "",
+    photo_url: profile?.foto_url ?? "",
   };
 }
 
@@ -63,7 +65,7 @@ export default function ProfileScreen() {
   }, [user]);
 
   const completion = useMemo(() => {
-    const values = [form.name, form.surname, form.email, form.location, form.bio];
+    const values = [form.name, form.surname, form.email, form.location, form.bio, form.photo_url];
     const filled = values.filter((v) => v.trim().length > 0).length;
     return Math.round((filled / values.length) * 100);
   }, [form]);
@@ -82,7 +84,7 @@ export default function ProfileScreen() {
           apellido: draft.surname,
           bio: draft.bio,
           ubicacion: draft.location,
-          foto_url: profile?.foto_url,
+          foto_url: draft.photo_url || undefined,
           fecha_nacimiento: profile?.fecha_nacimiento,
         });
         setProfile(updated);
@@ -196,6 +198,20 @@ export default function ProfileScreen() {
               editable={false}
               style={[styles.input, styles.inputReadonly]}
               placeholderTextColor="#8A9490"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>URL de foto</Text>
+            <TextInput
+              value={visibleForm.photo_url}
+              onChangeText={(v) => handleChange("photo_url", v)}
+              editable={isEditing}
+              style={[styles.input, !isEditing && styles.inputReadonly]}
+              placeholder="https://..."
+              placeholderTextColor="#8A9490"
+              autoCapitalize="none"
+              keyboardType="url"
             />
           </View>
 

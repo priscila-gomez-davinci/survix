@@ -371,7 +371,7 @@ export const styles = StyleSheet.create({
 
   // ─── Modal ────────────────────────────────────────────────────────────────────
   modalOverlay: {
-    position: "absolute" as never,
+    position: "fixed" as never,
     top: 0,
     left: 0,
     right: 0,
@@ -379,7 +379,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 200,
+    zIndex: 1000,
   },
   modal: {
     backgroundColor: C.surface,
@@ -393,6 +393,7 @@ export const styles = StyleSheet.create({
     shadowRadius: 40,
     elevation: 20,
     overflow: "visible" as never,
+    zIndex: 1001,
   },
   modalTitle: {
     fontSize: 17,

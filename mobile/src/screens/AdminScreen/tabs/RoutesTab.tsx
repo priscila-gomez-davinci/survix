@@ -114,6 +114,8 @@ type RouteFormState = {
   id_actividad: number | null;
   id_dificultad: number | null;
   id_ubicacion: number | null;
+  latitud: string;
+  longitud: string;
 };
 
 type RouteFormErrors = Partial<Record<keyof RouteFormState | "general", string>>;
@@ -126,6 +128,8 @@ const emptyRouteForm: RouteFormState = {
   id_actividad: null,
   id_dificultad: null,
   id_ubicacion: null,
+  latitud: "",
+  longitud: "",
 };
 
 function RouteModal({
@@ -278,6 +282,31 @@ function RouteModal({
           {errors.id_ubicacion ? <Text style={styles.formError}>{errors.id_ubicacion}</Text> : null}
         </View>
 
+        <View style={[styles.formRow, { marginTop: 14 }]}>
+          <View style={[styles.formGroup, { marginBottom: 0 }]}>
+            <Text style={styles.formLabel}>Latitud (mapa)</Text>
+            <TextInput
+              value={form.latitud}
+              onChangeText={(v) => set("latitud", v)}
+              style={styles.formInput}
+              placeholder="-34.6037"
+              placeholderTextColor={C.muted}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View style={[styles.formGroup, { marginBottom: 0 }]}>
+            <Text style={styles.formLabel}>Longitud (mapa)</Text>
+            <TextInput
+              value={form.longitud}
+              onChangeText={(v) => set("longitud", v)}
+              style={styles.formInput}
+              placeholder="-58.3816"
+              placeholderTextColor={C.muted}
+              keyboardType="decimal-pad"
+            />
+          </View>
+        </View>
+
         {errors.general ? <Text style={styles.generalError}>{errors.general}</Text> : null}
 
         <View style={styles.modalFooter}>
@@ -325,10 +354,7 @@ function PointsPanel({ routeId }: { routeId: number }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const parseCoord = (wkt: string): string => {
-    const m = wkt.match(/POINT\((-?\d+\.?\d*)\s+(-?\d+\.?\d*)\)/);
-    return m ? `${m[2]}, ${m[1]}` : wkt;
-  };
+  const fmtCoord = (pt: RoutePoint): string => `${pt.lat}, ${pt.lng}`;
 
   const handleAdd = async () => {
     const lat = Number(addLat);
@@ -381,10 +407,10 @@ function PointsPanel({ routeId }: { routeId: number }) {
           <View key={pt.id} style={styles.subPanelRow}>
             <Ionicons name="location-outline" size={14} color={C.greenDark} />
             <Text style={[styles.tdText, { flex: 1, fontSize: 13 }]}>
-              {pt.coordinates ? parseCoord(pt.coordinates) : pt.latlong ?? "—"}
+              {fmtCoord(pt)}
             </Text>
             <Text style={[styles.tdMuted, { fontSize: 12, marginRight: 8 }]}>
-              Orden: {pt.order ?? pt.orden}
+              Orden: {pt.order}
             </Text>
             <Pressable
               style={[styles.btnIcon, styles.btnIconRed, deletingId === pt.id && { opacity: 0.5 }]}
@@ -440,6 +466,168 @@ function PointsPanel({ routeId }: { routeId: number }) {
       {addError ? (
         <Text style={[styles.formError, { paddingHorizontal: 14, paddingBottom: 8 }]}>{addError}</Text>
       ) : null}
+    </View>
+  );
+}
+
+// ─── Activity type management panel ──────────────────────────────────────────
+
+function ActivityTypePanel({
+  options,
+  onChanged,
+}: {
+  options: SelectOption[];
+  onChanged: (updated: SelectOption[]) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAdd = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const created = await catalogApi.createActivity(newName.trim());
+      const next = [...options, { value: created.id, label: created.nombre }];
+      onChanged(next);
+      setNewName("");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "No se pudo crear.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEdit = async (id: number) => {
+    if (!editName.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await catalogApi.updateActivity(id, editName.trim());
+      const next = options.map((o) => o.value === id ? { value: updated.id, label: updated.nombre } : o);
+      onChanged(next);
+      setEditingId(null);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "No se pudo actualizar.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    setDeletingId(id);
+    setError(null);
+    try {
+      await catalogApi.deleteActivity(id);
+      onChanged(options.filter((o) => o.value !== id));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "No se pudo eliminar.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <View style={{
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 10,
+      marginBottom: 16,
+      overflow: "hidden",
+    }}>
+      <Pressable
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 11,
+          backgroundColor: "#f9fbf9",
+          borderBottomWidth: expanded ? 1 : 0,
+          borderBottomColor: C.border,
+        }}
+        onPress={() => setExpanded((v) => !v)}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Ionicons name="layers-outline" size={14} color={C.textSub} />
+          <Text style={{ fontSize: 12.5, fontWeight: "700", color: C.textSub, textTransform: "uppercase", letterSpacing: 0.8 }}>
+            Tipos de actividad ({options.length})
+          </Text>
+        </View>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={13} color={C.muted} />
+      </Pressable>
+
+      {expanded && (
+        <View style={{ padding: 14, gap: 8 }}>
+          {options.map((opt) => (
+            <View key={opt.value} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {editingId === opt.value ? (
+                <>
+                  <TextInput
+                    value={editName}
+                    onChangeText={setEditName}
+                    style={[styles.formInput, { flex: 1, height: 32 }]}
+                    autoFocus
+                    placeholderTextColor={C.muted}
+                  />
+                  <Pressable
+                    style={[styles.btnIcon, { backgroundColor: C.greenLight, borderColor: C.greenDark }]}
+                    onPress={() => handleEdit(opt.value)}
+                    disabled={saving}
+                  >
+                    {saving ? <ActivityIndicator size="small" color={C.greenDark} /> : <Ionicons name="checkmark" size={13} color={C.greenDark} />}
+                  </Pressable>
+                  <Pressable style={styles.btnIcon} onPress={() => setEditingId(null)}>
+                    <Ionicons name="close" size={13} color={C.muted} />
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.tdText, { flex: 1, fontSize: 13 }]}>{opt.label}</Text>
+                  <Pressable style={styles.btnIcon} onPress={() => { setEditingId(opt.value); setEditName(opt.label); setError(null); }}>
+                    <Ionicons name="pencil-outline" size={13} color={C.muted} />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.btnIcon, styles.btnIconRed, deletingId === opt.value && { opacity: 0.5 }]}
+                    onPress={() => handleDelete(opt.value)}
+                    disabled={deletingId === opt.value}
+                  >
+                    {deletingId === opt.value
+                      ? <ActivityIndicator size="small" color={C.red} />
+                      : <Ionicons name="trash-outline" size={13} color={C.red} />}
+                  </Pressable>
+                </>
+              )}
+            </View>
+          ))}
+
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+            <TextInput
+              value={newName}
+              onChangeText={setNewName}
+              style={[styles.formInput, { flex: 1, height: 32 }]}
+              placeholder="Nueva actividad..."
+              placeholderTextColor={C.muted}
+              onSubmitEditing={handleAdd}
+            />
+            <Pressable
+              style={[styles.btnPrimary, { height: 32 }, saving && { opacity: 0.7 }]}
+              onPress={handleAdd}
+              disabled={saving || !newName.trim()}
+            >
+              {saving ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="add" size={14} color="#fff" />}
+            </Pressable>
+          </View>
+
+          {error ? <Text style={styles.formError}>{error}</Text> : null}
+        </View>
+      )}
     </View>
   );
 }
@@ -516,6 +704,8 @@ export function RoutesTab() {
       id_actividad: form.id_actividad!,
       id_dificultad: form.id_dificultad!,
       id_ubicacion: form.id_ubicacion!,
+      latitud: form.latitud ? Number(form.latitud) : null,
+      longitud: form.longitud ? Number(form.longitud) : null,
     });
     setRoutes((prev) => [created, ...prev]);
     setShowModal(null);
@@ -529,6 +719,8 @@ export function RoutesTab() {
       descripcion: form.descripcion.trim() || undefined,
       distancia_km: form.distancia_km ? Number(form.distancia_km) : undefined,
       duracion_min: form.duracion_min ? Number(form.duracion_min) : undefined,
+      latitud: form.latitud ? Number(form.latitud) : null,
+      longitud: form.longitud ? Number(form.longitud) : null,
     });
     setRoutes((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     setShowModal(null);
@@ -595,6 +787,12 @@ export function RoutesTab() {
           </Text>
         </View>
       </View>
+
+      {/* Activity type management */}
+      <ActivityTypePanel
+        options={activityOptions}
+        onChanged={setActivityOptions}
+      />
 
       {/* Toolbar */}
       <View style={styles.toolbar}>
@@ -725,6 +923,8 @@ export function RoutesTab() {
                   id_actividad: editingRoute.id_actividad ?? null,
                   id_dificultad: editingRoute.id_dificultad ?? null,
                   id_ubicacion: editingRoute.id_ubicacion ?? null,
+                  latitud: editingRoute.latitud != null ? String(editingRoute.latitud) : "",
+                  longitud: editingRoute.longitud != null ? String(editingRoute.longitud) : "",
                 }
               : null
           }

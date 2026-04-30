@@ -9,14 +9,6 @@ import { routesApi, guidesApi, type Route, type Guide } from "@/src/services/api
 import type { HomeItem } from "@/src/data/homeData";
 import { equipment } from "@/src/data/homeData";
 
-// ─── WKT parser ──────────────────────────────────────────────────────────────
-// Backend returns coordinates as WKT: "POINT(longitude latitude)"
-function parseWkt(wkt: string): { latitude: number; longitude: number } | null {
-  const match = wkt.match(/POINT\((-?\d+\.?\d*)\s+(-?\d+\.?\d*)\)/);
-  if (!match) return null;
-  return { longitude: Number(match[1]), latitude: Number(match[2]) };
-}
-
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80";
 
@@ -32,8 +24,10 @@ function routeToHomeItem(route: Route): HomeItem {
 
   const image = route.images?.[0]?.url ?? PLACEHOLDER_IMAGE;
 
-  const firstPoint = route.points?.[0];
-  const coordinates = firstPoint ? parseWkt(firstPoint.coordinates) ?? undefined : undefined;
+  const coordinates =
+    route.latitud != null && route.longitud != null
+      ? { latitude: route.latitud, longitude: route.longitud }
+      : undefined;
 
   return {
     id: String(route.id),
@@ -49,12 +43,18 @@ function guideToHomeItem(guide: Guide): HomeItem {
   const subtitle =
     guide.duration != null ? `${guide.duration} min` : "";
 
+  const coordinates =
+    guide.latitud != null && guide.longitud != null
+      ? { latitude: guide.latitud, longitude: guide.longitud }
+      : undefined;
+
   return {
     id: String(guide.id),
     title: guide.title,
     subtitle,
     description: guide.description ?? "",
     image: PLACEHOLDER_IMAGE,
+    coordinates,
   };
 }
 

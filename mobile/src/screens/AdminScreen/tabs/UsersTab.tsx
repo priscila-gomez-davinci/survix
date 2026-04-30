@@ -126,6 +126,7 @@ function EditProfileModal({
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [birthdate, setBirthdate] = useState("");
+  const [fotoUrl, setFotoUrl] = useState("");
   const [noProfile, setNoProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,6 +140,7 @@ function EditProfileModal({
         setBio(p.bio ?? "");
         setLocation(p.ubicacion ?? "");
         setBirthdate(p.fecha_nacimiento ?? "");
+        setFotoUrl(p.foto_url ?? "");
       })
       .catch(() => setNoProfile(true))
       .finally(() => setLoading(false));
@@ -154,7 +156,7 @@ function EditProfileModal({
         bio: bio.trim(),
         ubicacion: location.trim(),
         fecha_nacimiento: birthdate.trim() || profile?.fecha_nacimiento,
-        foto_url: profile?.foto_url,
+        foto_url: fotoUrl.trim() || undefined,
       });
       onClose();
     } catch (e) {
@@ -210,6 +212,10 @@ function EditProfileModal({
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Fecha de nacimiento</Text>
               <TextInput value={birthdate} onChangeText={setBirthdate} style={styles.formInput} placeholder="YYYY-MM-DD" placeholderTextColor={C.muted} />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>URL de foto</Text>
+              <TextInput value={fotoUrl} onChangeText={setFotoUrl} style={styles.formInput} placeholder="https://..." placeholderTextColor={C.muted} autoCapitalize="none" keyboardType="url" />
             </View>
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Bio</Text>

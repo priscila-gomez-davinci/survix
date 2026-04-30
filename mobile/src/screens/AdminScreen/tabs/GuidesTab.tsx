@@ -8,39 +8,32 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { guidesApi, ApiError, type Guide } from "@/src/services/api";
+import { guidesApi, catalogApi, ApiError, type Guide, type CatalogItem } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { styles, C } from "../AdminScreen.styles";
 import { DeleteModal } from "../DeleteModal";
 
-// ─── Catalogs ─────────────────────────────────────────────────────────────────
+type Option = { value: number; label: string };
 
-const CATEGORY_OPTIONS = [
+// ─── Fallback catalogs (used if API fails) ────────────────────────────────────
+
+const FALLBACK_CATEGORY: Option[] = [
   { value: 1, label: "Supervivencia" },
   { value: 2, label: "Primeros Auxilios" },
   { value: 3, label: "Equipamiento" },
-  { value: 4, label: "Orientación" },
-  { value: 5, label: "Alimentación en campo" },
-  { value: 6, label: "Técnicas de escalada" },
 ];
 
-const LEVEL_OPTIONS = [
+const FALLBACK_LEVEL: Option[] = [
   { value: 1, label: "Básico" },
   { value: 2, label: "Intermedio" },
   { value: 3, label: "Avanzado" },
 ];
 
-function categoryLabel(id: number | null) {
-  return CATEGORY_OPTIONS.find((o) => o.value === id)?.label ?? "—";
-}
-
-function levelLabel(id: number | null) {
-  return LEVEL_OPTIONS.find((o) => o.value === id)?.label ?? "—";
+function catalogToOptions(items: CatalogItem[]): Option[] {
+  return items.map((c) => ({ value: c.id, label: c.nombre }));
 }
 
 // ─── SelectField ─────────────────────────────────────────────────────────────
-
-type Option = { value: number; label: string };
 
 function SelectField({
   value,
@@ -112,11 +105,13 @@ function SelectField({
 type GuideModalProps = {
   mode: "create" | "edit";
   initial?: Guide;
+  categoryOptions: Option[];
+  levelOptions: Option[];
   onClose: () => void;
   onSaved: (g: Guide) => void;
 };
 
-function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
+function GuideModal({ mode, initial, categoryOptions, levelOptions, onClose, onSaved }: GuideModalProps) {
   const [titulo, setTitulo] = useState(initial?.title ?? "");
   const [descripcion, setDescripcion] = useState(initial?.description ?? "");
   const [duracion, setDuracion] = useState(
@@ -127,6 +122,12 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
   );
   const [levelId, setLevelId] = useState<number | null>(
     initial?.complexity_level_id ?? null
+  );
+  const [latitud, setLatitud] = useState(
+    initial?.latitud != null ? String(initial.latitud) : ""
+  );
+  const [longitud, setLongitud] = useState(
+    initial?.longitud != null ? String(initial.longitud) : ""
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -154,6 +155,8 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
           duracion_min: Number(duracion),
           id_categoria_guias: categoryId!,
           id_nivel_complejidad: levelId!,
+          latitud: latitud ? Number(latitud) : null,
+          longitud: longitud ? Number(longitud) : null,
         });
       } else {
         result = await guidesApi.update(initial!.id, {
@@ -162,6 +165,8 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
           duracion_min: Number(duracion),
           id_categoria_guias: categoryId!,
           id_nivel_complejidad: levelId!,
+          latitud: latitud ? Number(latitud) : null,
+          longitud: longitud ? Number(longitud) : null,
         });
       }
       onSaved(result);
@@ -198,7 +203,7 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
             <Text style={styles.formLabel}>Categoría *</Text>
             <SelectField
               value={categoryId}
-              options={CATEGORY_OPTIONS}
+              options={categoryOptions}
               placeholder="Seleccionar..."
               onChange={setCategoryId}
             />
@@ -207,7 +212,7 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
             <Text style={styles.formLabel}>Nivel *</Text>
             <SelectField
               value={levelId}
-              options={LEVEL_OPTIONS}
+              options={levelOptions}
               placeholder="Seleccionar..."
               onChange={setLevelId}
             />
@@ -241,6 +246,32 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
           />
         </View>
 
+        {/* Latitud / Longitud */}
+        <View style={[styles.formRow, { zIndex: 1 }]}>
+          <View style={[styles.formGroup, { marginBottom: 0 }]}>
+            <Text style={styles.formLabel}>Latitud (mapa)</Text>
+            <TextInput
+              value={latitud}
+              onChangeText={setLatitud}
+              style={styles.formInput}
+              placeholder="-34.6037"
+              placeholderTextColor={C.muted}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View style={[styles.formGroup, { marginBottom: 0 }]}>
+            <Text style={styles.formLabel}>Longitud (mapa)</Text>
+            <TextInput
+              value={longitud}
+              onChangeText={setLongitud}
+              style={styles.formInput}
+              placeholder="-58.3816"
+              placeholderTextColor={C.muted}
+              keyboardType="decimal-pad"
+            />
+          </View>
+        </View>
+
         {error ? <Text style={styles.generalError}>{error}</Text> : null}
 
         <View style={styles.modalFooter}>
@@ -268,23 +299,23 @@ function GuideModal({ mode, initial, onClose, onSaved }: GuideModalProps) {
 
 // ─── Level badge ──────────────────────────────────────────────────────────────
 
-function LevelBadge({ id }: { id: number | null }) {
+function LevelBadge({ id, label }: { id: number | null; label: string }) {
+  if (label === "—") return <Text style={styles.tdMuted}>—</Text>;
   if (id === 1) return (
     <View style={[styles.badge, styles.badgeGreen]}>
-      <Text style={[styles.badgeText, styles.badgeGreenText]}>Básico</Text>
+      <Text style={[styles.badgeText, styles.badgeGreenText]}>{label}</Text>
     </View>
   );
   if (id === 2) return (
     <View style={[styles.badge, styles.badgeYellow]}>
-      <Text style={[styles.badgeText, styles.badgeYellowText]}>Intermedio</Text>
+      <Text style={[styles.badgeText, styles.badgeYellowText]}>{label}</Text>
     </View>
   );
-  if (id === 3) return (
+  return (
     <View style={[styles.badge, styles.badgeRed]}>
-      <Text style={[styles.badgeText, styles.badgeRedText]}>Avanzado</Text>
+      <Text style={[styles.badgeText, styles.badgeRedText]}>{label}</Text>
     </View>
   );
-  return <Text style={styles.tdMuted}>—</Text>;
 }
 
 // ─── GuidesTab ────────────────────────────────────────────────────────────────
@@ -301,6 +332,8 @@ export function GuidesTab() {
   const [editGuide, setEditGuide] = useState<Guide | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<Option[]>(FALLBACK_CATEGORY);
+  const [levelOptions, setLevelOptions] = useState<Option[]>(FALLBACK_LEVEL);
 
   const fetchGuides = useCallback(async () => {
     try {
@@ -315,6 +348,15 @@ export function GuidesTab() {
   useEffect(() => {
     fetchGuides().finally(() => setLoading(false));
   }, [fetchGuides]);
+
+  useEffect(() => {
+    Promise.all([catalogApi.guideCategories(), catalogApi.guideLevels()])
+      .then(([cats, lvls]) => {
+        if (cats.length > 0) setCategoryOptions(catalogToOptions(cats));
+        if (lvls.length > 0) setLevelOptions(catalogToOptions(lvls));
+      })
+      .catch(() => { /* keep fallback */ });
+  }, []);
 
   const filtered = guides.filter((g) =>
     (g.title ?? "").toLowerCase().includes(search.toLowerCase())
@@ -366,6 +408,8 @@ export function GuidesTab() {
         <GuideModal
           mode={editGuide ? "edit" : "create"}
           initial={editGuide ?? undefined}
+          categoryOptions={categoryOptions}
+          levelOptions={levelOptions}
           onClose={() => { setModalOpen(false); setEditGuide(null); }}
           onSaved={handleSaved}
         />
@@ -395,12 +439,12 @@ export function GuidesTab() {
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Categorías</Text>
-          <Text style={styles.statValue}>{CATEGORY_OPTIONS.length}</Text>
+          <Text style={styles.statValue}>{categoryOptions.length}</Text>
           <Text style={styles.statDelta}>Temáticas disponibles</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Niveles</Text>
-          <Text style={styles.statValue}>{LEVEL_OPTIONS.length}</Text>
+          <Text style={styles.statValue}>{levelOptions.length}</Text>
           <Text style={styles.statDelta}>Básico · Intermedio · Avanzado</Text>
         </View>
       </View>
@@ -477,10 +521,13 @@ export function GuidesTab() {
                 ) : null}
               </View>
               <Text style={[styles.tdText, { width: 140 }]} numberOfLines={1}>
-                {categoryLabel(guide.category_id)}
+                {categoryOptions.find((o) => o.value === guide.category_id)?.label ?? "—"}
               </Text>
               <View style={{ width: 110 }}>
-                <LevelBadge id={guide.complexity_level_id} />
+                <LevelBadge
+                  id={guide.complexity_level_id}
+                  label={levelOptions.find((o) => o.value === guide.complexity_level_id)?.label ?? "—"}
+                />
               </View>
               <Text style={[styles.tdText, { width: 80 }]}>
                 {guide.duration != null ? `${guide.duration} min` : "—"}
