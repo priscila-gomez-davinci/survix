@@ -129,6 +129,31 @@ export type RoutePoint = {
   order: number;
 };
 
+export type RouteReview = {
+  id_resenia_ruta: number;
+  id_rutas: number;
+  id_usuario: number;
+  puntaje: number;
+};
+
+export type RouteDetailData = {
+  route: {
+    id_rutas: number;
+    nombre: string;
+    descripcion: string;
+    distancia_km: number;
+    duracion_min: number;
+    latitud?: number | null;
+    longitud?: number | null;
+  };
+  location: { id_ubicacion: number; pais: string; provincia: string; ciudad: string };
+  activity: { id_actividad: number; nombre: string };
+  difficulty: { id_dificultad: number; nombre: string };
+  images: { id_ruta_imagen: number; url: string }[];
+  rating_avg: number | null;
+  reviews_count: number;
+};
+
 export type RouteCreateRequest = {
   id_actividad: number;
   id_dificultad: number;
@@ -384,6 +409,9 @@ export const routesApi = {
     return _mapRoute(raw);
   },
 
+  getDetail: (id: number): Promise<RouteDetailData> =>
+    request<RouteDetailData>(`/routes/${id}`),
+
   create: async (data: RouteCreateRequest): Promise<Route> => {
     const raw = await request<_BackendRoute>("/routes", {
       method: "POST",
@@ -413,12 +441,12 @@ export const routesApi = {
     }, true),
 
   getReviews: (id: number) =>
-    request<unknown[]>(`/routes/${id}/reviews`),
+    request<RouteReview[]>(`/routes/${id}/reviews`),
 
-  addReview: (id: number, rating: number, comment?: string) =>
-    request<unknown>(`/routes/${id}/reviews`, {
+  addReview: (id: number, puntaje: number) =>
+    request<RouteReview>(`/routes/${id}/reviews`, {
       method: "POST",
-      body: JSON.stringify({ rating, comment }),
+      body: JSON.stringify({ puntaje }),
     }, true),
 
   getPoints: async (id: number): Promise<RoutePoint[]> => {

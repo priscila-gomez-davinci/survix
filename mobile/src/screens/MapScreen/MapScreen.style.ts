@@ -81,6 +81,38 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  markerPinGuide: {
+    backgroundColor: "#D97706",
+  },
+  legend: {
+    position: "absolute",
+    bottom: 20,
+    right: 14,
+    backgroundColor: "rgba(255,255,255,0.93)",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  legendDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    color: "#333333",
+    fontWeight: "500",
+  },
   callout: {
     width: 180,
     padding: 10,
