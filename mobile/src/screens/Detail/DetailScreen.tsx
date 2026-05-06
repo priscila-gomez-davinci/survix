@@ -18,7 +18,8 @@ import type { PurchaseLink } from "@/src/data/homeData";
 import { styles } from "./DetailScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
 import { useHomeData } from "@/src/context/HomeDataContext";
-import { routesApi, guidesApi, ApiError, type GuideStep, type GuideProduct } from "@/src/services/api";
+import { routesApi, guidesApi, ApiError, type GuideStep, type GuideProduct, type RouteReview, type RouteDetailData, type RoutePoint } from "@/src/services/api";
+import RouteMap from "@/src/components/RouteMap";
 
 type FavoriteStatus = "idle" | "saving";
 
@@ -99,6 +100,13 @@ export default function DetailScreen() {
   const [products, setProducts] = useState<GuideProduct[]>([]);
   const [extraLoading, setExtraLoading] = useState(false);
 
+  // ─── Route-specific data ──────────────────────────────────────────────────
+  const [routeDetail, setRouteDetail] = useState<RouteDetailData | null>(null);
+  const [reviews, setReviews] = useState<RouteReview[]>([]);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
+  const [userRating, setUserRating] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   useEffect(() => {
     if (!isBackendItem) return;
     const id = Number(params.id);
@@ -110,10 +118,22 @@ export default function DetailScreen() {
           setSteps(s.sort((a, b) => a.order - b.order));
           setProducts(p);
         })
-        .catch(() => {}) // extra data is non-critical
+        .catch(() => {})
+        .finally(() => setExtraLoading(false));
+    } else if (params.type === "activity") {
+      Promise.all([
+        routesApi.getDetail(id),
+        routesApi.getReviews(id),
+        routesApi.getPoints(id),
+      ])
+        .then(([detail, revs, pts]) => {
+          setRouteDetail(detail);
+          setReviews(revs);
+          setRoutePoints(pts);
+        })
+        .catch(() => {})
         .finally(() => setExtraLoading(false));
     } else {
-      // For routes, nothing extra to fetch beyond what we have
       setExtraLoading(false);
     }
   }, [params.id, params.type, isBackendItem]);
@@ -262,6 +282,25 @@ export default function DetailScreen() {
     );
   };
 
+  const handleSubmitReview = async () => {
+    if (userRating === 0 || submittingReview) return;
+    setSubmittingReview(true);
+    try {
+      const newReview = await routesApi.addReview(Number(params.id), userRating);
+      setReviews((prev) => [...prev, newReview]);
+      setUserRating(0);
+    } catch {
+      Alert.alert("Error", "No se pudo enviar la reseña. Intentá de nuevo.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.puntaje, 0) / reviews.length
+      : (routeDetail?.rating_avg ?? null);
+
   // ─── Render helpers ───────────────────────────────────────────────────────
   const typeLabel =
     params.type === "activity" ? "Actividad"
@@ -397,6 +436,61 @@ export default function DetailScreen() {
                 </>
               ) : null}
 
+              {/* ── Route info chips ── */}
+              {params.type === "activity" && routeDetail && (
+                <View style={styles.chips}>
+                  {routeDetail.activity?.nombre ? (
+                    <View style={styles.chip}>
+                      <Ionicons name="walk-outline" size={13} color="#14342B" />
+                      <Text style={styles.chipText}>{routeDetail.activity.nombre}</Text>
+                    </View>
+                  ) : null}
+                  {routeDetail.difficulty?.nombre ? (
+                    <View style={styles.chip}>
+                      <Ionicons name="trending-up-outline" size={13} color="#14342B" />
+                      <Text style={styles.chipText}>{routeDetail.difficulty.nombre}</Text>
+                    </View>
+                  ) : null}
+                  {routeDetail.location?.ciudad ? (
+                    <View style={styles.chip}>
+                      <Ionicons name="location-outline" size={13} color="#14342B" />
+                      <Text style={styles.chipText}>
+                        {routeDetail.location.ciudad}, {routeDetail.location.pais}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+
+              {/* ── Route images gallery ── */}
+              {params.type === "activity" && routeDetail && routeDetail.images.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Fotos</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.gallery}
+                    contentContainerStyle={{ gap: 10, paddingRight: 4 }}
+                  >
+                    {routeDetail.images.map((img) => (
+                      <Image
+                        key={img.id_ruta_imagen}
+                        source={{ uri: img.url }}
+                        style={styles.galleryImage}
+                      />
+                    ))}
+                  </ScrollView>
+                </>
+              )}
+
+              {/* ── Route map with polyline ── */}
+              {params.type === "activity" && routePoints.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Recorrido</Text>
+                  <RouteMap points={routePoints} />
+                </>
+              )}
+
               {/* ── Guide steps ── */}
               {params.type === "guide" && (
                 extraLoading ? (
@@ -483,6 +577,91 @@ export default function DetailScreen() {
                     ))}
                   </View>
                 </View>
+              )}
+
+              {/* ── Reviews section ── */}
+              {params.type === "activity" && isBackendItem && (
+                <>
+                  <Text style={styles.sectionTitle}>Reseñas</Text>
+
+                  {extraLoading ? (
+                    <ActivityIndicator color="#14342B" style={{ marginVertical: 8 }} />
+                  ) : (
+                    <>
+                      {/* Average rating */}
+                      {avgRating !== null && (
+                        <View style={styles.ratingRow}>
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Ionicons
+                              key={i}
+                              name={i <= Math.round(avgRating) ? "star" : "star-outline"}
+                              size={18}
+                              color="#F59E0B"
+                            />
+                          ))}
+                          <Text style={styles.ratingLabel}>
+                            {avgRating.toFixed(1)} · {reviews.length} {reviews.length === 1 ? "reseña" : "reseñas"}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Reviews list */}
+                      {reviews.length === 0 && avgRating === null && (
+                        <Text style={[styles.description, { color: "#8A9490", marginBottom: 8 }]}>
+                          Todavía no hay reseñas. ¡Sé el primero!
+                        </Text>
+                      )}
+                      {reviews.map((r) => (
+                        <View key={r.id_resenia_ruta} style={styles.reviewCard}>
+                          <View style={{ flexDirection: "row", gap: 3 }}>
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Ionicons
+                                key={i}
+                                name={i <= r.puntaje ? "star" : "star-outline"}
+                                size={14}
+                                color="#F59E0B"
+                              />
+                            ))}
+                          </View>
+                        </View>
+                      ))}
+
+                      {/* Add review form */}
+                      {token && (
+                        <View style={styles.reviewForm}>
+                          <Text style={[styles.description, { fontWeight: "600", marginBottom: 8 }]}>
+                            Tu calificación
+                          </Text>
+                          <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Pressable key={i} onPress={() => setUserRating(i)}>
+                                <Ionicons
+                                  name={i <= userRating ? "star" : "star-outline"}
+                                  size={30}
+                                  color="#F59E0B"
+                                />
+                              </Pressable>
+                            ))}
+                          </View>
+                          <Pressable
+                            style={[
+                              styles.reviewSubmitBtn,
+                              (userRating === 0 || submittingReview) && { opacity: 0.45 },
+                            ]}
+                            onPress={handleSubmitReview}
+                            disabled={userRating === 0 || submittingReview}
+                          >
+                            {submittingReview ? (
+                              <ActivityIndicator color="#fff" />
+                            ) : (
+                              <Text style={styles.primaryButtonText}>Enviar reseña</Text>
+                            )}
+                          </Pressable>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </>
               )}
 
               {/* ── Favorites button ── */}

@@ -24,7 +24,7 @@ type LocationStatus = "loading" | "granted" | "denied";
 
 export default function MapScreen() {
   const router = useRouter();
-  const { activities } = useHomeData();
+  const { activities, guides } = useHomeData();
 
   const [region, setRegion] = useState(BUENOS_AIRES);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("loading");
@@ -60,28 +60,25 @@ export default function MapScreen() {
     });
   }, []);
 
-  const activitiesWithCoords = activities.filter((a) => a.coordinates);
+  const inRegion = (coords: { latitude: number; longitude: number }) =>
+    coords.latitude >= region.latitude - region.latitudeDelta / 2 &&
+    coords.latitude <= region.latitude + region.latitudeDelta / 2 &&
+    coords.longitude >= region.longitude - region.longitudeDelta / 2 &&
+    coords.longitude <= region.longitude + region.longitudeDelta / 2;
 
-  const visibleActivities = activitiesWithCoords.filter((a) => {
-    const { latitude, longitude } = a.coordinates!;
-    return (
-      latitude >= region.latitude - region.latitudeDelta / 2 &&
-      latitude <= region.latitude + region.latitudeDelta / 2 &&
-      longitude >= region.longitude - region.longitudeDelta / 2 &&
-      longitude <= region.longitude + region.longitudeDelta / 2
-    );
-  });
+  const visibleActivities = activities.filter((a) => a.coordinates && inRegion(a.coordinates!));
+  const visibleGuides = guides.filter((g) => g.coordinates && inRegion(g.coordinates!));
 
-  const handleCalloutPress = (activity: (typeof activities)[number]) => {
+  const handleCalloutPress = (item: typeof activities[number], type: "activity" | "guide") => {
     router.push({
       pathname: "/detail",
       params: {
-        id: activity.id,
-        type: "activity",
-        title: activity.title,
-        subtitle: activity.subtitle,
-        description: activity.description,
-        image: activity.image,
+        id: item.id,
+        type,
+        title: item.title,
+        subtitle: item.subtitle,
+        description: item.description,
+        image: item.image,
       },
     });
   };
@@ -104,17 +101,33 @@ export default function MapScreen() {
           >
             {visibleActivities.map((activity) => (
               <Marker
-                key={activity.id}
+                key={`a-${activity.id}`}
                 coordinate={activity.coordinates!}
-                onCalloutPress={() => handleCalloutPress(activity)}
+                onCalloutPress={() => handleCalloutPress(activity, "activity")}
               >
                 <View style={styles.markerPin}>
-                  <Ionicons name="leaf" size={14} color="#FFFFFF" />
+                  <Ionicons name="map-outline" size={14} color="#FFFFFF" />
                 </View>
-
                 <Callout style={styles.callout}>
                   <Text style={styles.calloutTitle}>{activity.title}</Text>
                   <Text style={styles.calloutSubtitle}>{activity.subtitle}</Text>
+                  <Text style={styles.calloutAction}>Ver detalle →</Text>
+                </Callout>
+              </Marker>
+            ))}
+
+            {visibleGuides.map((guide) => (
+              <Marker
+                key={`g-${guide.id}`}
+                coordinate={guide.coordinates!}
+                onCalloutPress={() => handleCalloutPress(guide, "guide")}
+              >
+                <View style={[styles.markerPin, styles.markerPinGuide]}>
+                  <Ionicons name="book-outline" size={14} color="#FFFFFF" />
+                </View>
+                <Callout style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{guide.title}</Text>
+                  <Text style={styles.calloutSubtitle}>{guide.subtitle}</Text>
                   <Text style={styles.calloutAction}>Ver detalle →</Text>
                 </Callout>
               </Marker>
@@ -139,6 +152,17 @@ export default function MapScreen() {
             </Text>
           </View>
         )}
+
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: "#14342B" }]} />
+            <Text style={styles.legendText}>Actividades</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: "#D97706" }]} />
+            <Text style={styles.legendText}>Guías</Text>
+          </View>
+        </View>
       </View>
     </SafeAreaView>
   );

@@ -1,10 +1,36 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, SafeAreaView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useHomeData } from "@/src/context/HomeDataContext";
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 const BUENOS_AIRES = { lat: -34.6037, lng: -58.3816 };
+
+const ACTIVITY_COLOR = "#14342B";
+const GUIDE_COLOR = "#D97706";
+
+function makePinUrl(bgColor: string, iconSvg: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">
+    <path d="M15 0C6.7 0 0 6.7 0 15C0 26.3 15 38 15 38S30 26.3 30 15C30 6.7 23.3 0 15 0Z" fill="${bgColor}"/>
+    ${iconSvg}
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+const ACTIVITY_PIN_URL = makePinUrl(
+  ACTIVITY_COLOR,
+  `<polygon points="4,22 13,8 22,22" fill="rgba(255,255,255,0.5)"/>
+   <polygon points="9,22 18,8 27,22" fill="white"/>`,
+);
+
+const GUIDE_PIN_URL = makePinUrl(
+  GUIDE_COLOR,
+  `<rect x="8" y="6" width="14" height="17" rx="1.5" fill="white"/>
+   <rect x="8" y="6" width="3" height="17" rx="1.5" fill="${GUIDE_COLOR}" opacity="0.35"/>
+   <rect x="12" y="10" width="8" height="1.5" rx="0.75" fill="${GUIDE_COLOR}"/>
+   <rect x="12" y="13" width="8" height="1.5" rx="0.75" fill="${GUIDE_COLOR}"/>
+   <rect x="12" y="16" width="5" height="1.5" rx="0.75" fill="${GUIDE_COLOR}"/>`,
+);
 
 declare global {
   interface Window { google: any }
@@ -56,10 +82,11 @@ export default function MapScreen() {
 
     const addMarker = (
       item: { id: string; title: string; subtitle?: string; description?: string; image?: string; coordinates?: { latitude: number; longitude: number } },
-      color: string,
       type: "activity" | "guide",
     ) => {
       if (!item.coordinates) return;
+      const color = type === "activity" ? ACTIVITY_COLOR : GUIDE_COLOR;
+      const pinUrl = type === "activity" ? ACTIVITY_PIN_URL : GUIDE_PIN_URL;
       const marker = new gm.Marker({
         position: {
           lat: item.coordinates.latitude,
@@ -68,12 +95,9 @@ export default function MapScreen() {
         map: gMapRef.current,
         title: item.title,
         icon: {
-          path: gm.SymbolPath.CIRCLE,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: "#FFFFFF",
-          strokeWeight: 2,
-          scale: 9,
+          url: pinUrl,
+          scaledSize: new gm.Size(30, 38),
+          anchor: new gm.Point(15, 38),
         },
       });
 
@@ -113,8 +137,8 @@ export default function MapScreen() {
       markersRef.current.push(marker);
     };
 
-    activities.forEach((a) => addMarker(a, "#14342B", "activity"));
-    guides.forEach((g) => addMarker(g, "#D97706", "guide"));
+    activities.forEach((a) => addMarker(a, "activity"));
+    guides.forEach((g) => addMarker(g, "guide"));
 
     return () => {
       markersRef.current.forEach((m) => m.setMap(null));
@@ -130,6 +154,16 @@ export default function MapScreen() {
         </View>
       )}
       <View ref={mapContainerRef} style={styles.mapContainer} />
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: ACTIVITY_COLOR }]} />
+          <Text style={styles.legendText}>Actividades</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: GUIDE_COLOR }]} />
+          <Text style={styles.legendText}>Guías</Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -147,5 +181,34 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+  },
+  legend: {
+    position: "absolute",
+    bottom: 20,
+    right: 14,
+    backgroundColor: "#FFFFFFEE",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  legendDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    color: "#333",
+    fontWeight: "500",
   },
 });
