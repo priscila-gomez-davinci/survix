@@ -138,10 +138,24 @@ export default function MapScreen() {
         infoWindow.open(gMapRef.current, marker);
       });
 
-      if (type === "activity") {
-        routesApi.getPoints(Number(item.id)).then((pts) => {
-          if (pts.length < 2 || !gMapRef.current) return;
-          const sorted = [...pts].sort((a, b) => a.order - b.order);
+      markersRef.current.push(marker);
+    };
+
+    // Activities: fetch points to draw polyline and, if no lat/lng, derive marker position from centroid
+    activities.forEach((a) => {
+      routesApi.getPoints(Number(a.id)).then((pts) => {
+        if (!gMapRef.current) return;
+        const sorted = [...pts].sort((x, y) => x.order - y.order);
+
+        let markerItem = a;
+        if (!a.coordinates && sorted.length > 0) {
+          const centerLat = sorted.reduce((s, p) => s + p.lat, 0) / sorted.length;
+          const centerLng = sorted.reduce((s, p) => s + p.lng, 0) / sorted.length;
+          markerItem = { ...a, coordinates: { latitude: centerLat, longitude: centerLng } };
+        }
+        addMarker(markerItem, "activity");
+
+        if (sorted.length >= 2) {
           const polyline = new gm.Polyline({
             path: sorted.map((p) => ({ lat: p.lat, lng: p.lng })),
             map: gMapRef.current,
@@ -150,13 +164,12 @@ export default function MapScreen() {
             strokeOpacity: 0.85,
           });
           polylinesRef.current.push(polyline);
-        }).catch(() => {});
-      }
+        }
+      }).catch(() => {
+        if (a.coordinates) addMarker(a, "activity");
+      });
+    });
 
-      markersRef.current.push(marker);
-    };
-
-    activities.forEach((a) => addMarker(a, "activity"));
     guides.forEach((g) => addMarker(g, "guide"));
 
     return () => {
