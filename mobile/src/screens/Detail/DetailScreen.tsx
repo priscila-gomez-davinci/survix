@@ -121,6 +121,9 @@ export default function DetailScreen() {
         .catch(() => {})
         .finally(() => setExtraLoading(false));
     } else if (params.type === "activity") {
+      if (token) {
+        routesApi.checkFavorite(id).then((r) => setFavorited(r.is_favorited)).catch(() => {});
+      }
       Promise.all([
         routesApi.getDetail(id),
         routesApi.getReviews(id),

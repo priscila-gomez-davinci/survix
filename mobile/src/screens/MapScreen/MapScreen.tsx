@@ -9,9 +9,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import MapView, { Callout, Marker } from "react-native-maps";
+import MapView, { Callout, Marker, Polyline } from "react-native-maps";
 import { styles } from "./MapScreen.style";
 import { useHomeData } from "@/src/context/HomeDataContext";
+import { routesApi } from "@/src/services/api";
 
 const BUENOS_AIRES = {
   latitude: -34.6037,
@@ -28,6 +29,7 @@ export default function MapScreen() {
 
   const [region, setRegion] = useState(BUENOS_AIRES);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("loading");
+  const [activeRouteCoords, setActiveRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
 
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
@@ -69,6 +71,16 @@ export default function MapScreen() {
   const visibleActivities = activities.filter((a) => a.coordinates && inRegion(a.coordinates!));
   const visibleGuides = guides.filter((g) => g.coordinates && inRegion(g.coordinates!));
 
+  const handleActivityPress = async (activityId: string) => {
+    try {
+      const pts = await routesApi.getPoints(Number(activityId));
+      const sorted = [...pts].sort((a, b) => a.order - b.order);
+      setActiveRouteCoords(sorted.map(p => ({ latitude: p.lat, longitude: p.lng })));
+    } catch {
+      setActiveRouteCoords([]);
+    }
+  };
+
   const handleCalloutPress = (item: typeof activities[number], type: "activity" | "guide") => {
     router.push({
       pathname: "/detail",
@@ -96,13 +108,23 @@ export default function MapScreen() {
             style={styles.map}
             initialRegion={region}
             onRegionChangeComplete={setRegion}
+            onPress={() => setActiveRouteCoords([])}
             showsUserLocation
             showsMyLocationButton={false}
           >
+            {activeRouteCoords.length >= 2 && (
+              <Polyline
+                coordinates={activeRouteCoords}
+                strokeColor="#14342B"
+                strokeWidth={3}
+              />
+            )}
+
             {visibleActivities.map((activity) => (
               <Marker
                 key={`a-${activity.id}`}
                 coordinate={activity.coordinates!}
+                onPress={() => handleActivityPress(activity.id)}
                 onCalloutPress={() => handleCalloutPress(activity, "activity")}
               >
                 <View style={styles.markerPin}>
