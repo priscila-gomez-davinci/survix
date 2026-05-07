@@ -482,11 +482,17 @@ export const routesApi = {
   download: (id: number) =>
     request<void>(`/routes/${id}/download`, { method: "POST" }, true),
 
+  checkFavorite: (id: number) =>
+    request<{ is_favorited: boolean }>(`/routes/${id}/favorite`, {}, true),
+
   addFavorite: (id: number) =>
     request<void>(`/routes/${id}/favorite`, { method: "POST" }, true),
 
   removeFavorite: (id: number) =>
     request<void>(`/routes/${id}/favorite`, { method: "DELETE" }, true),
+
+  listFavorites: () =>
+    request<_BackendRoute[]>(`/routes/favorites`, {}, true),
 };
 
 // ─── Guides ───────────────────────────────────────────────────────────────────
