@@ -290,7 +290,7 @@ function RouteModal({
               value={form.latitud}
               onChangeText={(v) => set("latitud", v)}
               style={styles.formInput}
-              placeholder="-34.6037"
+              placeholder="ej. -34.6037"
               placeholderTextColor={C.muted}
               keyboardType="decimal-pad"
             />
@@ -301,7 +301,7 @@ function RouteModal({
               value={form.longitud}
               onChangeText={(v) => set("longitud", v)}
               style={styles.formInput}
-              placeholder="-58.3816"
+              placeholder="ej. -58.3816"
               placeholderTextColor={C.muted}
               keyboardType="decimal-pad"
             />
@@ -433,7 +433,7 @@ function PointsPanel({ routeId }: { routeId: number }) {
           value={addLat}
           onChangeText={setAddLat}
           style={[styles.formInput, { flex: 1, minWidth: 80 }]}
-          placeholder="Latitud"
+          placeholder="Latitud (ej. -34.6037)"
           placeholderTextColor={C.muted}
           keyboardType="decimal-pad"
         />
@@ -441,7 +441,7 @@ function PointsPanel({ routeId }: { routeId: number }) {
           value={addLng}
           onChangeText={setAddLng}
           style={[styles.formInput, { flex: 1, minWidth: 80 }]}
-          placeholder="Longitud"
+          placeholder="Longitud (ej. -58.3816)"
           placeholderTextColor={C.muted}
           keyboardType="decimal-pad"
         />

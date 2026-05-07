@@ -255,7 +255,7 @@ function GuideModal({ mode, initial, categoryOptions, levelOptions, onClose, onS
               value={latitud}
               onChangeText={setLatitud}
               style={styles.formInput}
-              placeholder="-34.6037"
+              placeholder="ej. -34.6037"
               placeholderTextColor={C.muted}
               keyboardType="decimal-pad"
             />
@@ -266,7 +266,7 @@ function GuideModal({ mode, initial, categoryOptions, levelOptions, onClose, onS
               value={longitud}
               onChangeText={setLongitud}
               style={styles.formInput}
-              placeholder="-58.3816"
+              placeholder="ej. -58.3816"
               placeholderTextColor={C.muted}
               keyboardType="decimal-pad"
             />
