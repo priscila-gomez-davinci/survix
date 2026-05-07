@@ -43,7 +43,7 @@ export default function MapScreen() {
   const mapContainerRef = useRef<any>(null);
   const gMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const polylineRef = useRef<any>(null);
+  const polylinesRef = useRef<any[]>([]);
   const [scriptReady, setScriptReady] = useState(false);
 
   // Load the Maps JS API once
@@ -69,13 +69,6 @@ export default function MapScreen() {
       disableDefaultUI: true,
       zoomControl: true,
     });
-    gMapRef.current.addListener("click", () => {
-      if (polylineRef.current) {
-        polylineRef.current.setMap(null);
-        polylineRef.current = null;
-      }
-    });
-
     return () => {
       gMapRef.current = null;
     };
@@ -88,10 +81,8 @@ export default function MapScreen() {
 
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
-    if (polylineRef.current) {
-      polylineRef.current.setMap(null);
-      polylineRef.current = null;
-    }
+    polylinesRef.current.forEach((p) => p.setMap(null));
+    polylinesRef.current = [];
 
     const addMarker = (
       item: { id: string; title: string; subtitle?: string; description?: string; image?: string; coordinates?: { latitude: number; longitude: number } },
@@ -145,25 +136,22 @@ export default function MapScreen() {
 
       marker.addListener("click", () => {
         infoWindow.open(gMapRef.current, marker);
-
-        if (type === "activity") {
-          if (polylineRef.current) {
-            polylineRef.current.setMap(null);
-            polylineRef.current = null;
-          }
-          routesApi.getPoints(Number(item.id)).then((pts) => {
-            if (pts.length < 2 || !gMapRef.current) return;
-            const sorted = [...pts].sort((a, b) => a.order - b.order);
-            polylineRef.current = new gm.Polyline({
-              path: sorted.map((p) => ({ lat: p.lat, lng: p.lng })),
-              map: gMapRef.current,
-              strokeColor: "#14342B",
-              strokeWeight: 3,
-              strokeOpacity: 0.85,
-            });
-          }).catch(() => {});
-        }
       });
+
+      if (type === "activity") {
+        routesApi.getPoints(Number(item.id)).then((pts) => {
+          if (pts.length < 2 || !gMapRef.current) return;
+          const sorted = [...pts].sort((a, b) => a.order - b.order);
+          const polyline = new gm.Polyline({
+            path: sorted.map((p) => ({ lat: p.lat, lng: p.lng })),
+            map: gMapRef.current,
+            strokeColor: "#14342B",
+            strokeWeight: 3,
+            strokeOpacity: 0.85,
+          });
+          polylinesRef.current.push(polyline);
+        }).catch(() => {});
+      }
 
       markersRef.current.push(marker);
     };
@@ -174,6 +162,8 @@ export default function MapScreen() {
     return () => {
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
+      polylinesRef.current.forEach((p) => p.setMap(null));
+      polylinesRef.current = [];
     };
   }, [activities, guides, scriptReady, router]);
 

@@ -374,7 +374,7 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
             value={lat}
             onChangeText={(v) => { setLat(v); clearField("lat"); }}
             style={[styles.input, errors.lat && styles.inputError]}
-            placeholder="-34.6037"
+            placeholder="ej. -34.6037"
             placeholderTextColor="#8A9490"
             keyboardType="decimal-pad"
           />
@@ -384,7 +384,7 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
             value={lng}
             onChangeText={(v) => { setLng(v); clearField("lng"); }}
             style={[styles.input, errors.lng && styles.inputError]}
-            placeholder="-58.3816"
+            placeholder="ej. -58.3816"
             placeholderTextColor="#8A9490"
             keyboardType="decimal-pad"
           />

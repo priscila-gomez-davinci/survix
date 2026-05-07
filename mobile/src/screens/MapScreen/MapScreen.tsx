@@ -29,7 +29,23 @@ export default function MapScreen() {
 
   const [region, setRegion] = useState(BUENOS_AIRES);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("loading");
-  const [activeRouteCoords, setActiveRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [routePolylines, setRoutePolylines] = useState<{ id: string; coords: { latitude: number; longitude: number }[] }[]>([]);
+
+  useEffect(() => {
+    if (activities.length === 0) return;
+    Promise.allSettled(
+      activities.map(async (a) => ({ id: a.id, pts: await routesApi.getPoints(Number(a.id)) }))
+    ).then((results) => {
+      const lines = results
+        .filter((r): r is PromiseFulfilledResult<{ id: string; pts: { lat: number; lng: number; order: number }[] }> => r.status === "fulfilled")
+        .filter((r) => r.value.pts.length >= 2)
+        .map((r) => ({
+          id: r.value.id,
+          coords: [...r.value.pts].sort((a, b) => a.order - b.order).map((p) => ({ latitude: p.lat, longitude: p.lng })),
+        }));
+      setRoutePolylines(lines);
+    });
+  }, [activities]);
 
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
@@ -71,16 +87,6 @@ export default function MapScreen() {
   const visibleActivities = activities.filter((a) => a.coordinates && inRegion(a.coordinates!));
   const visibleGuides = guides.filter((g) => g.coordinates && inRegion(g.coordinates!));
 
-  const handleActivityPress = async (activityId: string) => {
-    try {
-      const pts = await routesApi.getPoints(Number(activityId));
-      const sorted = [...pts].sort((a, b) => a.order - b.order);
-      setActiveRouteCoords(sorted.map(p => ({ latitude: p.lat, longitude: p.lng })));
-    } catch {
-      setActiveRouteCoords([]);
-    }
-  };
-
   const handleCalloutPress = (item: typeof activities[number], type: "activity" | "guide") => {
     router.push({
       pathname: "/detail",
@@ -108,23 +114,22 @@ export default function MapScreen() {
             style={styles.map}
             initialRegion={region}
             onRegionChangeComplete={setRegion}
-            onPress={() => setActiveRouteCoords([])}
             showsUserLocation
             showsMyLocationButton={false}
           >
-            {activeRouteCoords.length >= 2 && (
+            {routePolylines.map((poly) => (
               <Polyline
-                coordinates={activeRouteCoords}
+                key={`poly-${poly.id}`}
+                coordinates={poly.coords}
                 strokeColor="#14342B"
                 strokeWidth={3}
               />
-            )}
+            ))}
 
             {visibleActivities.map((activity) => (
               <Marker
                 key={`a-${activity.id}`}
                 coordinate={activity.coordinates!}
-                onPress={() => handleActivityPress(activity.id)}
                 onCalloutPress={() => handleCalloutPress(activity, "activity")}
               >
                 <View style={styles.markerPin}>
