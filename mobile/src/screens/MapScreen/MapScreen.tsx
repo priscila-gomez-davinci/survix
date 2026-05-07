@@ -30,20 +30,34 @@ export default function MapScreen() {
   const [region, setRegion] = useState(BUENOS_AIRES);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("loading");
   const [routePolylines, setRoutePolylines] = useState<{ id: string; coords: { latitude: number; longitude: number }[] }[]>([]);
+  const [syntheticMarkers, setSyntheticMarkers] = useState<typeof activities>([]);
 
   useEffect(() => {
     if (activities.length === 0) return;
     Promise.allSettled(
-      activities.map(async (a) => ({ id: a.id, pts: await routesApi.getPoints(Number(a.id)) }))
+      activities.map(async (a) => ({ item: a, pts: await routesApi.getPoints(Number(a.id)) }))
     ).then((results) => {
-      const lines = results
-        .filter((r): r is PromiseFulfilledResult<{ id: string; pts: { lat: number; lng: number; order: number }[] }> => r.status === "fulfilled")
-        .filter((r) => r.value.pts.length >= 2)
+      const fulfilled = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => (r as PromiseFulfilledResult<{ item: typeof activities[0]; pts: { lat: number; lng: number; order: number }[] }>).value);
+
+      const lines = fulfilled
+        .filter((r) => r.pts.length >= 2)
         .map((r) => ({
-          id: r.value.id,
-          coords: [...r.value.pts].sort((a, b) => a.order - b.order).map((p) => ({ latitude: p.lat, longitude: p.lng })),
+          id: r.item.id,
+          coords: [...r.pts].sort((a, b) => a.order - b.order).map((p) => ({ latitude: p.lat, longitude: p.lng })),
         }));
       setRoutePolylines(lines);
+
+      const synth = fulfilled
+        .filter((r) => !r.item.coordinates && r.pts.length > 0)
+        .map((r) => {
+          const sorted = [...r.pts].sort((a, b) => a.order - b.order);
+          const centerLat = sorted.reduce((s, p) => s + p.lat, 0) / sorted.length;
+          const centerLng = sorted.reduce((s, p) => s + p.lng, 0) / sorted.length;
+          return { ...r.item, coordinates: { latitude: centerLat, longitude: centerLng } };
+        });
+      setSyntheticMarkers(synth);
     });
   }, [activities]);
 
@@ -85,6 +99,7 @@ export default function MapScreen() {
     coords.longitude <= region.longitude + region.longitudeDelta / 2;
 
   const visibleActivities = activities.filter((a) => a.coordinates && inRegion(a.coordinates!));
+  const visibleSyntheticMarkers = syntheticMarkers.filter((m) => inRegion(m.coordinates!));
   const visibleGuides = guides.filter((g) => g.coordinates && inRegion(g.coordinates!));
 
   const handleCalloutPress = (item: typeof activities[number], type: "activity" | "guide") => {
@@ -126,7 +141,7 @@ export default function MapScreen() {
               />
             ))}
 
-            {visibleActivities.map((activity) => (
+            {[...visibleActivities, ...visibleSyntheticMarkers].map((activity) => (
               <Marker
                 key={`a-${activity.id}`}
                 coordinate={activity.coordinates!}
