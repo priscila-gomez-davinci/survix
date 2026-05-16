@@ -491,8 +491,10 @@ export const routesApi = {
   removeFavorite: (id: number) =>
     request<void>(`/routes/${id}/favorite`, { method: "DELETE" }, true),
 
-  listFavorites: () =>
-    request<_BackendRoute[]>(`/routes/favorites`, {}, true),
+  listFavorites: async (): Promise<Route[]> => {
+    const raw = await request<_BackendRoute[]>(`/routes/favorites`, {}, true);
+    return raw.map(_mapRoute);
+  },
 };
 
 // ─── Guides ───────────────────────────────────────────────────────────────────
@@ -573,4 +575,96 @@ export const guidesApi = {
 
   removeFavorite: (id: number) =>
     request<void>(`/guides/${id}/favorite`, { method: "DELETE" }, true),
+};
+
+// ─── Posts ────────────────────────────────────────────────────────────────────
+
+import type { BlogComment, BlogPost } from "@/src/data/blogData";
+
+type _BackendComment = {
+  id: number;
+  contenido: string;
+  autor_nombre: string;
+  fecha: string;
+};
+
+type _BackendPost = {
+  id: number;
+  titulo: string | null;
+  contenido: string;
+  categoria: string | null;
+  fecha: string;
+  autor_nombre: string;
+  autor_rol: string;
+  imagen_url: string | null;
+  likes_count: number;
+  liked_by_me: boolean;
+  comments: _BackendComment[];
+};
+
+function _mapComment(c: _BackendComment): BlogComment {
+  return { id: c.id, text: c.contenido, author: c.autor_nombre };
+}
+
+function _mapPost(p: _BackendPost): BlogPost {
+  const full = p.contenido;
+  const summary = full.length > 200 ? `${full.slice(0, 200)}…` : full;
+  return {
+    id: String(p.id),
+    author: p.autor_nombre,
+    role: p.autor_rol,
+    title: p.titulo ?? "",
+    summary,
+    body: full,
+    image: p.imagen_url ?? undefined,
+    category: p.categoria ?? "General",
+    likes: p.likes_count,
+    likedByMe: p.liked_by_me,
+    comments: p.comments.map(_mapComment),
+  };
+}
+
+export type PostCreatePayload = {
+  titulo: string;
+  contenido: string;
+  categoria: string;
+  imagen_url?: string;
+};
+
+export const postsApi = {
+  list: async (): Promise<BlogPost[]> => {
+    const raw = await request<_BackendPost[]>("/posts", {}, true);
+    return raw.map(_mapPost);
+  },
+
+  getById: async (id: number): Promise<BlogPost> => {
+    const raw = await request<_BackendPost>(`/posts/${id}`, {}, true);
+    return _mapPost(raw);
+  },
+
+  create: async (payload: PostCreatePayload): Promise<BlogPost> => {
+    const raw = await request<_BackendPost>("/posts", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, true);
+    return _mapPost(raw);
+  },
+
+  delete: (id: number) =>
+    request<void>(`/posts/${id}`, { method: "DELETE" }, true),
+
+  addLike: (id: number) =>
+    request<void>(`/posts/${id}/like`, { method: "POST" }, true),
+
+  removeLike: (id: number) =>
+    request<void>(`/posts/${id}/like`, { method: "DELETE" }, true),
+
+  addComment: (id: number, contenido: string) =>
+    request<void>(`/posts/${id}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ contenido }),
+    }, true),
+
+  deleteComment: (postId: number, commentId: number) =>
+    request<void>(`/posts/${postId}/comments/${commentId}`, { method: "DELETE" }, true),
 };

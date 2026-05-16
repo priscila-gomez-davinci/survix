@@ -31,6 +31,7 @@ const initialState: MessageState = {
 export default function ComposeScreen() {
   const router = useRouter();
   const { addPost } = usePostsContext();
+  const [submitting, setSubmitting] = useState(false);
   const [messageType, setMessageType] = useState<MessageType>("suggestion");
   const [form, setForm] = useState<MessageState>(initialState);
   const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
@@ -45,26 +46,25 @@ export default function ComposeScreen() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.title.trim() || !form.body.trim()) {
       setSubmittedMessage("Completa un titulo y un mensaje antes de enviar.");
       return;
     }
-
-    addPost({
-      id: `post-${Date.now()}`,
-      author: "Priscila Torres",
-      role: messageType === "suggestion" ? "Sugerencia" : "Consulta",
-      title: form.title.trim(),
-      summary: form.body.trim(),
-      category: form.category.trim() || "General",
-      likes: 0,
-      dislikes: 0,
-      comments: [],
-    });
-
-    setForm(initialState);
-    router.push("/blog");
+    setSubmitting(true);
+    try {
+      await addPost({
+        titulo: form.title.trim(),
+        contenido: form.body.trim(),
+        categoria: form.category.trim() || "General",
+      });
+      setForm(initialState);
+      router.push("/blog");
+    } catch {
+      setSubmittedMessage("No se pudo publicar. Verificá tu conexión e intentá de nuevo.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -169,8 +169,10 @@ export default function ComposeScreen() {
             />
           </View>
 
-          <Pressable style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Enviar mensaje</Text>
+          <Pressable style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
+            <Text style={styles.submitButtonText}>
+              {submitting ? "Publicando..." : "Enviar mensaje"}
+            </Text>
           </Pressable>
 
           {submittedMessage ? (

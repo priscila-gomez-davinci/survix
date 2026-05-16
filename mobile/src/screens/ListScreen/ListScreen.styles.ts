@@ -133,6 +133,12 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6D7673",
   },
+  favoriteButton: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   // ─── Empty state ─────────────────────────────────────────────────────────────
   emptyState: {
