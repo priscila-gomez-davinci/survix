@@ -111,13 +111,10 @@ export const styles = StyleSheet.create({
     color: "#58716A",
     lineHeight: 20,
   },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -126,9 +123,6 @@ export const styles = StyleSheet.create({
   },
   actionButtonPositive: {
     backgroundColor: "#18B678",
-  },
-  actionButtonNegative: {
-    backgroundColor: "#C15A5A",
   },
   actionText: {
     color: "#173B32",
@@ -176,6 +170,12 @@ export const styles = StyleSheet.create({
     backgroundColor: "#14342B",
     alignItems: "center",
     justifyContent: "center",
+  },
+  readMore: {
+    color: "#10A95A",
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 6,
   },
   filterRow: {
     flexDirection: "row",

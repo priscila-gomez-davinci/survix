@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -15,6 +16,7 @@ import type { HomeItem } from "@/src/data/homeData";
 import { styles } from "./ListScreen.styles";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { useAuth } from "@/src/context/AuthContext";
+import { routesApi } from "@/src/services/api";
 
 const TITLE_BY_TYPE: Record<string, string> = {
   activity: "Actividades",
@@ -35,12 +37,21 @@ export default function ListScreen() {
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
   const { activities, guides, equipment } = useHomeData();
-  const { isAdmin } = useAuth();
+  const { isAdmin, token } = useAuth();
 
   const [search, setSearch] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
   const [maxDuration, setMaxDuration] = useState("");
   const [showExtraFilters, setShowExtraFilters] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (type !== "activity" || !token) return;
+    routesApi.listFavorites()
+      .then((favs) => setFavoriteIds(new Set(favs.map((r) => String(r.id)))))
+      .catch(() => {});
+  }, [type, token]);
 
   const canCreate = isAdmin && Platform.OS === "web" && (type === "activity" || type === "guide");
   const isActivity = type === "activity";
@@ -70,6 +81,29 @@ export default function ListScreen() {
     setSearch("");
     setMaxDistance("");
     setMaxDuration("");
+  };
+
+  const handleFavoriteToggle = async (itemId: string) => {
+    if (togglingId) return;
+    setTogglingId(itemId);
+    const isFav = favoriteIds.has(itemId);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      isFav ? next.delete(itemId) : next.add(itemId);
+      return next;
+    });
+    try {
+      if (isFav) await routesApi.removeFavorite(Number(itemId));
+      else await routesApi.addFavorite(Number(itemId));
+    } catch {
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        isFav ? next.add(itemId) : next.delete(itemId);
+        return next;
+      });
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   const handleItemPress = (item: HomeItem) => {
@@ -206,6 +240,23 @@ export default function ListScreen() {
                   <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
                 ) : null}
               </View>
+              {isActivity && token ? (
+                <Pressable
+                  style={styles.favoriteButton}
+                  onPress={() => handleFavoriteToggle(item.id)}
+                  hitSlop={8}
+                >
+                  {togglingId === item.id ? (
+                    <ActivityIndicator size="small" color="#E53E3E" />
+                  ) : (
+                    <Ionicons
+                      name={favoriteIds.has(item.id) ? "heart" : "heart-outline"}
+                      size={20}
+                      color={favoriteIds.has(item.id) ? "#E53E3E" : "#8A9490"}
+                    />
+                  )}
+                </Pressable>
+              ) : null}
               <Ionicons name="chevron-forward" size={18} color="#8A9490" />
             </Pressable>
           ))
