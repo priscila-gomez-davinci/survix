@@ -8,6 +8,7 @@ export type BlogPost = {
   id: string;
   author: string;
   role: string;
+  authorPhoto?: string;
   title: string;
   summary: string;
   body?: string;

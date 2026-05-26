@@ -605,6 +605,7 @@ type _BackendPost = {
   fecha: string;
   autor_nombre: string;
   autor_rol: string;
+  autor_foto_url: string | null;
   imagen_url: string | null;
   likes_count: number;
   liked_by_me: boolean;
@@ -622,6 +623,7 @@ function _mapPost(p: _BackendPost): BlogPost {
     id: String(p.id),
     author: p.autor_nombre,
     role: p.autor_rol,
+    authorPhoto: p.autor_foto_url ?? undefined,
     title: p.titulo ?? "",
     summary,
     body: full,

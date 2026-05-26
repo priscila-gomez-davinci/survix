@@ -74,6 +74,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  authorAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+  },
   authorBadgeText: {
     color: "#14342B",
     fontWeight: "800",
@@ -214,8 +219,13 @@ export const styles = StyleSheet.create({
   },
   postImage: {
     width: "100%",
-    height: 200,
+    height: 220,
     borderRadius: 14,
+  },
+  postImageWeb: {
+    width: "100%",
+    borderRadius: 14,
+    minHeight: 120,
   },
 
   // ─── Compose panel ────────────────────────────────────────────────────────

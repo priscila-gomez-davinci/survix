@@ -59,7 +59,7 @@ export default function PostDetailScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {post.image ? (
-          <Image source={{ uri: post.image }} style={styles.heroImage} resizeMode="cover" />
+          <Image source={{ uri: post.image }} style={styles.heroImage} resizeMode="contain" />
         ) : (
           <View style={[styles.heroImage, styles.heroImagePlaceholder]}>
             <Text style={styles.heroImageCategory}>{post.category}</Text>
@@ -73,9 +73,13 @@ export default function PostDetailScreen() {
         <Text style={styles.postTitle}>{post.title}</Text>
 
         <View style={styles.authorRow}>
-          <View style={styles.authorBadge}>
-            <Text style={styles.authorBadgeText}>{initials}</Text>
-          </View>
+          {post.authorPhoto ? (
+            <Image source={{ uri: post.authorPhoto }} style={styles.authorBadge} />
+          ) : (
+            <View style={styles.authorBadge}>
+              <Text style={styles.authorBadgeText}>{initials}</Text>
+            </View>
+          )}
           <View>
             <Text style={styles.authorName}>{post.author}</Text>
             <Text style={styles.authorRole}>{post.role}</Text>

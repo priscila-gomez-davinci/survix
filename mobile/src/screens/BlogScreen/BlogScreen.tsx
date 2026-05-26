@@ -112,11 +112,15 @@ export default function BlogScreen() {
                   router.push({ pathname: "/post-detail", params: { postId: post.id } })
                 }
               >
-                <View style={styles.authorBadge}>
-                  <Text style={styles.authorBadgeText}>
-                    {post.author.split(" ").map((w) => w[0]).join("")}
-                  </Text>
-                </View>
+                {post.authorPhoto ? (
+                  <Image source={{ uri: post.authorPhoto }} style={styles.authorAvatar} />
+                ) : (
+                  <View style={styles.authorBadge}>
+                    <Text style={styles.authorBadgeText}>
+                      {post.author.split(" ").map((w) => w[0]).join("")}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.authorCopy}>
                   <Text style={styles.authorName}>{post.author}</Text>
                   <Text style={styles.authorRole}>{post.role}</Text>
@@ -127,7 +131,7 @@ export default function BlogScreen() {
               </Pressable>
 
               {post.image ? (
-                <Image source={{ uri: post.image }} style={styles.postImage} />
+                <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="contain" />
               ) : null}
 
               <Pressable
