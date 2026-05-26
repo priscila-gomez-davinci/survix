@@ -199,4 +199,144 @@ export const styles = StyleSheet.create({
   filterChipTextActive: {
     color: "#FFFFFF",
   },
+
+  // ─── Web split layout ──────────────────────────────────────────────────────
+  webLayout: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  feedColumn: {
+    flex: 1,
+  },
+  feedContent: {
+    padding: 20,
+    gap: 16,
+  },
+  postImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 14,
+  },
+
+  // ─── Compose panel ────────────────────────────────────────────────────────
+  composeColumn: {
+    width: 320,
+    borderLeftWidth: 1,
+    borderLeftColor: "#E8EDEB",
+    backgroundColor: "#FFFFFF",
+  },
+  composeScrollContent: {
+    padding: 20,
+    gap: 16,
+  },
+  composeTitle: {
+    color: "#173B32",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  composeSubtitle: {
+    color: "#6F7D78",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  togglePill: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "#E8EDEB",
+    alignItems: "center",
+  },
+  togglePillActive: {
+    backgroundColor: "#14342B",
+  },
+  toggleText: {
+    color: "#58716A",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  toggleTextActive: {
+    color: "#FFFFFF",
+  },
+  composeFieldGroup: {
+    gap: 6,
+  },
+  composeLabel: {
+    color: "#173B32",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  composeInput: {
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D7DEDB",
+    backgroundColor: "#F8FAF9",
+    paddingHorizontal: 14,
+    color: "#173B32",
+    fontSize: 14,
+  },
+  composeTextArea: {
+    minHeight: 100,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D7DEDB",
+    backgroundColor: "#F8FAF9",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: "#173B32",
+    fontSize: 14,
+  },
+  composePhotoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#C5D4CE",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#F5F6F5",
+    justifyContent: "center",
+  },
+  composePhotoButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#14342B",
+  },
+  composeImagePreview: {
+    width: "100%",
+    height: 140,
+    borderRadius: 12,
+  },
+  changePhotoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+  },
+  changePhotoText: {
+    color: "#14342B",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  composeError: {
+    color: "#D93025",
+    fontSize: 12,
+  },
+  composeSubmit: {
+    backgroundColor: "#14342B",
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  composeSubmitText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 15,
+  },
 });

@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -124,6 +125,10 @@ export default function BlogScreen() {
                   <Text style={styles.categoryText}>{post.category}</Text>
                 </View>
               </Pressable>
+
+              {post.image ? (
+                <Image source={{ uri: post.image }} style={styles.postImage} />
+              ) : null}
 
               <Pressable
                 onPress={() =>

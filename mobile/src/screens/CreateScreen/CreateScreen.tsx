@@ -95,6 +95,7 @@ type GuideErrors = {
 
 function GuideForm({ onSuccess }: { onSuccess: () => void }) {
   const { refresh } = useHomeData();
+  const { imageUri, imageFile, uploading, pickImage, uploadPicked } = useWebImagePicker();
 
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -128,13 +129,23 @@ function GuideForm({ onSuccess }: { onSuccess: () => void }) {
     setErrors({});
     setLoading(true);
     try {
-      await guidesApi.create({
+      let uploadedUrl: string | null = null;
+      if (imageFile) {
+        uploadedUrl = await uploadPicked();
+      }
+
+      const guide = await guidesApi.create({
         titulo: titulo.trim(),
         descripcion: descripcion.trim() || undefined,
         duracion_min: Number(duracion),
         id_categoria_guias: Number(idCategoria),
         id_nivel_complejidad: Number(idNivel),
       });
+
+      if (uploadedUrl) {
+        await guidesApi.addImage(guide.id, uploadedUrl).catch(() => {});
+      }
+
       refresh();
       onSuccess();
     } catch (error) {
@@ -208,6 +219,33 @@ function GuideForm({ onSuccess }: { onSuccess: () => void }) {
           />
         </Field>
       </View>
+
+      {/* Imagen de portada */}
+      <View style={styles.sectionDivider}>
+        <Text style={styles.sectionLabel}>Imagen de portada (opcional)</Text>
+      </View>
+
+      <Pressable
+        style={[styles.imagePicker, imageUri && { padding: 0, borderWidth: 0 }]}
+        onPress={pickImage}
+        disabled={uploading}
+      >
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
+        ) : (
+          <View style={styles.imagePickerInner}>
+            <Ionicons name="image-outline" size={28} color="#8A9490" />
+            <Text style={styles.imagePickerText}>Seleccionar imagen</Text>
+            <Text style={styles.imagePickerHint}>JPG, PNG o WebP · máx 8 MB</Text>
+          </View>
+        )}
+        {imageUri && (
+          <View style={styles.imagePickerOverlay}>
+            <Ionicons name="pencil" size={16} color="#FFFFFF" />
+            <Text style={styles.imagePickerOverlayText}>Cambiar</Text>
+          </View>
+        )}
+      </Pressable>
 
       {errors.general && (
         <Text style={[styles.errorText, { textAlign: "center" }]}>{errors.general}</Text>
