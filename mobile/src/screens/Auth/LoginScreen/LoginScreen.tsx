@@ -60,10 +60,12 @@ export default function LoginScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
   // ─── Google auth session ──────────────────────────────────────────────────
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleClientId,
+    androidClientId: googleAndroidClientId,
   });
 
   useEffect(() => {
