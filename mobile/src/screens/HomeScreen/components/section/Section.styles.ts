@@ -23,6 +23,6 @@ export const sectionStyles = StyleSheet.create({
     fontWeight: "500",
   },
   horizontalList: {
-    paddingRight: 6,
+    paddingRight: 14,
   },
 });

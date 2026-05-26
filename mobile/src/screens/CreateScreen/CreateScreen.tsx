@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   SafeAreaView,
@@ -12,10 +13,48 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { routesApi, guidesApi, ApiError } from "@/src/services/api";
+import { routesApi, guidesApi, ApiError, uploadImage } from "@/src/services/api";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./CreateScreen.styles";
+
+// ─── Web image picker ─────────────────────────────────────────────────────────
+
+function useWebImagePicker() {
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const pickImage = () => {
+    if (!inputRef.current) {
+      const el = document.createElement("input");
+      el.type = "file";
+      el.accept = "image/jpeg,image/png,image/webp,image/gif";
+      el.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        setImageFile(file);
+        setImageUri(URL.createObjectURL(file));
+      };
+      inputRef.current = el;
+    }
+    inputRef.current.value = "";
+    inputRef.current.click();
+  };
+
+  const uploadPicked = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    setUploading(true);
+    try {
+      return await uploadImage(imageFile);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return { imageUri, imageFile, uploading, pickImage, uploadPicked };
+}
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -204,6 +243,7 @@ type RouteErrors = {
 
 function RouteForm({ onSuccess }: { onSuccess: () => void }) {
   const { refresh } = useHomeData();
+  const { imageUri, imageFile, uploading, pickImage, uploadPicked } = useWebImagePicker();
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -251,6 +291,12 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
     setErrors({});
     setLoading(true);
     try {
+      // Upload image first if one was picked
+      let uploadedUrl: string | null = null;
+      if (imageFile) {
+        uploadedUrl = await uploadPicked();
+      }
+
       const route = await routesApi.create({
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || undefined,
@@ -261,11 +307,14 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
         id_ubicacion: Number(idUbicacion),
       });
 
+      // Attach image if uploaded
+      if (uploadedUrl) {
+        await routesApi.addImage(route.id, uploadedUrl).catch(() => {});
+      }
+
       // If coordinates provided, add the point so it appears on the map
       if (lat && lng) {
-        await routesApi.addPoint(route.id, Number(lat), Number(lng)).catch(() => {
-          // Non-critical: route was created, point is bonus
-        });
+        await routesApi.addPoint(route.id, Number(lat), Number(lng)).catch(() => {});
       }
 
       refresh();
@@ -362,6 +411,33 @@ function RouteForm({ onSuccess }: { onSuccess: () => void }) {
           keyboardType="numeric"
         />
       </Field>
+
+      {/* Imagen de portada */}
+      <View style={styles.sectionDivider}>
+        <Text style={styles.sectionLabel}>Imagen de portada (opcional)</Text>
+      </View>
+
+      <Pressable
+        style={[styles.imagePicker, imageUri && { padding: 0, borderWidth: 0 }]}
+        onPress={pickImage}
+        disabled={uploading}
+      >
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
+        ) : (
+          <View style={styles.imagePickerInner}>
+            <Ionicons name="image-outline" size={28} color="#8A9490" />
+            <Text style={styles.imagePickerText}>Seleccionar imagen</Text>
+            <Text style={styles.imagePickerHint}>JPG, PNG o WebP · máx 8 MB</Text>
+          </View>
+        )}
+        {imageUri && (
+          <View style={styles.imagePickerOverlay}>
+            <Ionicons name="pencil" size={16} color="#FFFFFF" />
+            <Text style={styles.imagePickerOverlayText}>Cambiar</Text>
+          </View>
+        )}
+      </Pressable>
 
       {/* Coordenadas opcionales — necesarias para que aparezca en el mapa */}
       <View style={styles.sectionDivider}>
