@@ -79,7 +79,6 @@ export default function RegisterScreen() {
 
   useEffect(() => {
     if (!response) return;
-    console.log("[Google response]", response.type, response);
 
     if (response.type === "error") {
       Alert.alert("Error de Google", response.error?.message ?? "Error desconocido.");
@@ -99,19 +98,16 @@ export default function RegisterScreen() {
         if (idToken) {
           const credential = GoogleAuthProvider.credential(idToken, accessToken);
           const { user } = await signInWithCredential(firebaseAuth, credential);
-          console.log("[Google Firebase uid]", user.uid, user.email);
-          await loginWithGoogle(user.uid, user.email ?? "");
+          const firebaseIdToken = await user.getIdToken();
+          await loginWithGoogle(user.uid, user.email ?? "", firebaseIdToken);
         } else {
-          console.log("[Google] sin idToken, usando userinfo API");
           const info = await fetch("https://www.googleapis.com/userinfo/v2/me", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }).then((r) => r.json()) as { id: string; email: string };
-          console.log("[Google userinfo]", info.id, info.email);
-          await loginWithGoogle(info.id, info.email);
+          await loginWithGoogle(info.id, info.email, undefined);
         }
         router.replace("/home");
       } catch (error) {
-        console.error("[Google register error]", error);
         const msg = error instanceof ApiError
           ? error.message
           : error instanceof FirebaseError

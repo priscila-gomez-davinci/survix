@@ -28,7 +28,7 @@ type AuthContextValue = {
   setProfilePhoto: (url: string | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (firebase_uid: string, email: string) => Promise<void>;
+  loginWithGoogle: (firebase_uid: string, email: string, id_token?: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -100,8 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Google → Firebase para obtener uid real → firebase-sync
-  const loginWithGoogle = async (firebase_uid: string, email: string) => {
-    const { access_token } = await authApi.firebaseSync(firebase_uid, email);
+  const loginWithGoogle = async (firebase_uid: string, email: string, id_token?: string) => {
+    const { access_token } = await authApi.firebaseSync(firebase_uid, email, id_token);
     await setStoredToken(access_token);
     setToken(access_token);
     const me = await authApi.me();

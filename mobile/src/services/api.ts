@@ -1,20 +1,34 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://survixapp.com";
-const TOKEN_KEY = "@survix/token";
+const TOKEN_KEY = "survix_token";
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
+// On native: expo-secure-store (encrypted keychain/keystore).
+// On web: sessionStorage (secure-store is not available on web).
 
 export async function getStoredToken(): Promise<string | null> {
-  return AsyncStorage.getItem(TOKEN_KEY);
+  if (Platform.OS === "web") {
+    return sessionStorage.getItem(TOKEN_KEY);
+  }
+  return SecureStore.getItemAsync(TOKEN_KEY);
 }
 
 export async function setStoredToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(TOKEN_KEY, token);
+  if (Platform.OS === "web") {
+    sessionStorage.setItem(TOKEN_KEY, token);
+    return;
+  }
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
 export async function clearStoredToken(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_KEY);
+  if (Platform.OS === "web") {
+    sessionStorage.removeItem(TOKEN_KEY);
+    return;
+  }
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
 // ─── Unauthorized handler ─────────────────────────────────────────────────────
@@ -312,10 +326,10 @@ export const authApi = {
 
   me: () => request<User>("/auth/me", {}, true),
 
-  firebaseSync: (firebase_uid: string, email: string) =>
+  firebaseSync: (firebase_uid: string, email: string, id_token?: string) =>
     request<AuthResponse>("/auth/firebase-sync", {
       method: "POST",
-      body: JSON.stringify({ firebase_uid, email }),
+      body: JSON.stringify({ firebase_uid, email, id_token }),
     }),
 };
 
