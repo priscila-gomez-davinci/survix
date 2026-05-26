@@ -4,12 +4,15 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
+  Pressable,
   SafeAreaView,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
-import MapView, { Callout, Marker, Polyline } from "react-native-maps";
+import MapView, { Marker, Polyline } from "react-native-maps";
 import { styles } from "./MapScreen.style";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { routesApi } from "@/src/services/api";
@@ -31,6 +34,7 @@ export default function MapScreen() {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("loading");
   const [routePolylines, setRoutePolylines] = useState<{ id: string; coords: { latitude: number; longitude: number }[] }[]>([]);
   const [syntheticMarkers, setSyntheticMarkers] = useState<typeof activities>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (activities.length === 0) return;
@@ -145,16 +149,20 @@ export default function MapScreen() {
               <Marker
                 key={`a-${activity.id}`}
                 coordinate={activity.coordinates!}
-                onCalloutPress={() => handleCalloutPress(activity, "activity")}
+                tracksViewChanges={false}
+                onPress={() => setSelectedId(activity.id === selectedId ? null : activity.id)}
               >
-                <View style={styles.markerPin}>
-                  <Ionicons name="map-outline" size={14} color="#FFFFFF" />
-                </View>
-                <Callout style={styles.callout}>
-                  <Text style={styles.calloutTitle}>{activity.title}</Text>
-                  <Text style={styles.calloutSubtitle}>{activity.subtitle}</Text>
-                  <Text style={styles.calloutAction}>Ver detalle →</Text>
-                </Callout>
+                <Pressable
+                  style={[styles.markerLabel, selectedId === activity.id && styles.markerLabelSelected]}
+                  onPress={() => handleCalloutPress(activity, "activity")}
+                >
+                  <Text
+                    style={[styles.markerLabelText, selectedId === activity.id && styles.markerLabelTextSelected]}
+                    numberOfLines={1}
+                  >
+                    {activity.title}
+                  </Text>
+                </Pressable>
               </Marker>
             ))}
 
@@ -162,16 +170,20 @@ export default function MapScreen() {
               <Marker
                 key={`g-${guide.id}`}
                 coordinate={guide.coordinates!}
-                onCalloutPress={() => handleCalloutPress(guide, "guide")}
+                tracksViewChanges={false}
+                onPress={() => setSelectedId(guide.id === selectedId ? null : guide.id)}
               >
-                <View style={[styles.markerPin, styles.markerPinGuide]}>
-                  <Ionicons name="book-outline" size={14} color="#FFFFFF" />
-                </View>
-                <Callout style={styles.callout}>
-                  <Text style={styles.calloutTitle}>{guide.title}</Text>
-                  <Text style={styles.calloutSubtitle}>{guide.subtitle}</Text>
-                  <Text style={styles.calloutAction}>Ver detalle →</Text>
-                </Callout>
+                <Pressable
+                  style={[styles.markerLabel, styles.markerLabelGuide, selectedId === guide.id && styles.markerLabelGuideSelected]}
+                  onPress={() => handleCalloutPress(guide, "guide")}
+                >
+                  <Text
+                    style={[styles.markerLabelText, selectedId === guide.id && styles.markerLabelTextSelected]}
+                    numberOfLines={1}
+                  >
+                    {guide.title}
+                  </Text>
+                </Pressable>
               </Marker>
             ))}
           </MapView>
@@ -195,16 +207,47 @@ export default function MapScreen() {
           </View>
         )}
 
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: "#14342B" }]} />
-            <Text style={styles.legendText}>Actividades</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: "#D97706" }]} />
-            <Text style={styles.legendText}>Guías</Text>
-          </View>
-        </View>
+        {([...visibleActivities, ...visibleSyntheticMarkers, ...visibleGuides].length > 0) && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.bottomStrip}
+            contentContainerStyle={styles.bottomStripContent}
+          >
+            {[...visibleActivities, ...visibleSyntheticMarkers].map((item) => (
+              <Pressable
+                key={`card-a-${item.id}`}
+                style={styles.bottomCard}
+                onPress={() => handleCalloutPress(item, "activity")}
+              >
+                <Image source={{ uri: item.image }} style={styles.bottomCardImage} resizeMode="cover" />
+                <View style={styles.bottomCardContent}>
+                  <Text style={styles.bottomCardType}>Actividad</Text>
+                  <Text style={styles.bottomCardTitle} numberOfLines={1}>{item.title}</Text>
+                  {item.subtitle ? (
+                    <Text style={styles.bottomCardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                  ) : null}
+                </View>
+              </Pressable>
+            ))}
+            {visibleGuides.map((item) => (
+              <Pressable
+                key={`card-g-${item.id}`}
+                style={styles.bottomCard}
+                onPress={() => handleCalloutPress(item, "guide")}
+              >
+                <Image source={{ uri: item.image }} style={styles.bottomCardImage} resizeMode="cover" />
+                <View style={styles.bottomCardContent}>
+                  <Text style={styles.bottomCardType}>Guía</Text>
+                  <Text style={styles.bottomCardTitle} numberOfLines={1}>{item.title}</Text>
+                  {item.subtitle ? (
+                    <Text style={styles.bottomCardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                  ) : null}
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );

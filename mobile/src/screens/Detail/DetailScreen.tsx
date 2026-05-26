@@ -37,6 +37,14 @@ type EditErrors = {
   duracion?: string;
 };
 
+function ratingLabel(r: number) {
+  if (r >= 4.5) return "Excelente";
+  if (r >= 4.0) return "Muy bueno";
+  if (r >= 3.0) return "Bueno";
+  if (r >= 2.0) return "Regular";
+  return "Mejorable";
+}
+
 function parseSubtitle(
   subtitle: string,
   type: string
@@ -346,10 +354,38 @@ export default function DetailScreen() {
               </Pressable>
             </View>
           )}
+
+          {params.type === "activity" && avgRating !== null && (
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={14} color="#F59E0B" />
+              <Text style={styles.ratingBadgeValue}>{avgRating.toFixed(1)}</Text>
+              <Text style={styles.ratingBadgeLabel}>
+                {reviews.length} {reviews.length === 1 ? "reseña" : "reseñas"}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.type}>{typeLabel}</Text>
+          <View style={styles.typeRow}>
+            <Text style={styles.type}>{typeLabel}</Text>
+            {isAdmin && isBackendItem && !isEditing && Platform.OS !== "web" && (
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Pressable
+                  style={{ backgroundColor: "#E8EDEB", borderRadius: 8, padding: 8 }}
+                  onPress={() => { setDraft({ ...displayed }); setIsEditing(true); }}
+                >
+                  <Ionicons name="pencil" size={16} color="#14342B" />
+                </Pressable>
+                <Pressable
+                  style={{ backgroundColor: "#FFE8E8", borderRadius: 8, padding: 8 }}
+                  onPress={handleDelete}
+                >
+                  <Ionicons name="trash" size={16} color="#D93025" />
+                </Pressable>
+              </View>
+            )}
+          </View>
 
           {/* ── Edit mode ── */}
           {isEditing ? (
@@ -429,7 +465,25 @@ export default function DetailScreen() {
           ) : (
             <>
               <Text style={styles.title}>{displayed.title}</Text>
-              <Text style={styles.subtitle}>{displayed.subtitle}</Text>
+
+              {(displayed.distancia || displayed.duracion) && (
+                <View style={styles.statsRow}>
+                  {displayed.distancia ? (
+                    <View style={styles.statCard}>
+                      <Ionicons name="navigate-outline" size={18} color="#10A95A" />
+                      <Text style={styles.statValue}>{displayed.distancia} km</Text>
+                      <Text style={styles.statLabel}>Distancia</Text>
+                    </View>
+                  ) : null}
+                  {displayed.duracion ? (
+                    <View style={styles.statCard}>
+                      <Ionicons name="time-outline" size={18} color="#10A95A" />
+                      <Text style={styles.statValue}>{displayed.duracion} min</Text>
+                      <Text style={styles.statLabel}>Duracion</Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
 
               {/* ── Description ── */}
               {displayed.description ? (
@@ -439,27 +493,34 @@ export default function DetailScreen() {
                 </>
               ) : null}
 
-              {/* ── Route info chips ── */}
-              {params.type === "activity" && routeDetail && (
-                <View style={styles.chips}>
+              {/* ── Amenity grid ── */}
+              {params.type === "activity" && routeDetail && (routeDetail.activity?.nombre || routeDetail.difficulty?.nombre || routeDetail.location?.ciudad) && (
+                <View style={styles.amenityGrid}>
                   {routeDetail.activity?.nombre ? (
-                    <View style={styles.chip}>
-                      <Ionicons name="walk-outline" size={13} color="#14342B" />
-                      <Text style={styles.chipText}>{routeDetail.activity.nombre}</Text>
+                    <View style={styles.amenityItem}>
+                      <Ionicons name="walk-outline" size={22} color="#14342B" />
+                      <View>
+                        <Text style={styles.amenityName}>{routeDetail.activity.nombre}</Text>
+                        <Text style={styles.amenityDesc}>Tipo de actividad</Text>
+                      </View>
                     </View>
                   ) : null}
                   {routeDetail.difficulty?.nombre ? (
-                    <View style={styles.chip}>
-                      <Ionicons name="trending-up-outline" size={13} color="#14342B" />
-                      <Text style={styles.chipText}>{routeDetail.difficulty.nombre}</Text>
+                    <View style={styles.amenityItem}>
+                      <Ionicons name="trending-up-outline" size={22} color="#14342B" />
+                      <View>
+                        <Text style={styles.amenityName}>{routeDetail.difficulty.nombre}</Text>
+                        <Text style={styles.amenityDesc}>Dificultad</Text>
+                      </View>
                     </View>
                   ) : null}
                   {routeDetail.location?.ciudad ? (
-                    <View style={styles.chip}>
-                      <Ionicons name="location-outline" size={13} color="#14342B" />
-                      <Text style={styles.chipText}>
-                        {routeDetail.location.ciudad}, {routeDetail.location.pais}
-                      </Text>
+                    <View style={styles.amenityItem}>
+                      <Ionicons name="location-outline" size={22} color="#14342B" />
+                      <View>
+                        <Text style={styles.amenityName}>{routeDetail.location.ciudad}</Text>
+                        <Text style={styles.amenityDesc}>{routeDetail.location.pais}</Text>
+                      </View>
                     </View>
                   ) : null}
                 </View>
@@ -591,20 +652,18 @@ export default function DetailScreen() {
                     <ActivityIndicator color="#14342B" style={{ marginVertical: 8 }} />
                   ) : (
                     <>
-                      {/* Average rating */}
+                      {/* Average rating badge */}
                       {avgRating !== null && (
-                        <View style={styles.ratingRow}>
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <Ionicons
-                              key={i}
-                              name={i <= Math.round(avgRating) ? "star" : "star-outline"}
-                              size={18}
-                              color="#F59E0B"
-                            />
-                          ))}
-                          <Text style={styles.ratingLabel}>
-                            {avgRating.toFixed(1)} · {reviews.length} {reviews.length === 1 ? "reseña" : "reseñas"}
-                          </Text>
+                        <View style={styles.ratingHeader}>
+                          <View style={styles.scoreBadge}>
+                            <Text style={styles.scoreValue}>{avgRating.toFixed(1)}</Text>
+                          </View>
+                          <View>
+                            <Text style={styles.scoreLabel}>{ratingLabel(avgRating)}</Text>
+                            <Text style={styles.reviewCount}>
+                              {reviews.length} {reviews.length === 1 ? "reseña" : "reseñas"}
+                            </Text>
+                          </View>
                         </View>
                       )}
 

@@ -67,52 +67,92 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  markerPin: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#14342B",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
+  // ─── Airbnb-style pill markers ───────────────────────────────────────────
+  markerLabel: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderColor: "#D7DEDB",
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+    maxWidth: 130,
   },
-  markerPinGuide: {
+  markerLabelSelected: {
+    backgroundColor: "#14342B",
+    borderColor: "#14342B",
+  },
+  markerLabelGuide: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#D97706",
+  },
+  markerLabelGuideSelected: {
     backgroundColor: "#D97706",
+    borderColor: "#D97706",
   },
-  legend: {
-    position: "absolute",
-    bottom: 20,
-    right: 14,
-    backgroundColor: "rgba(255,255,255,0.93)",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  legendDot: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-  },
-  legendText: {
+  markerLabelText: {
     fontSize: 12,
-    color: "#333333",
-    fontWeight: "500",
+    fontWeight: "700",
+    color: "#14342B",
   },
+  markerLabelTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  // ─── Bottom card strip ────────────────────────────────────────────────────
+  bottomStrip: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  bottomStripContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 8,
+    gap: 12,
+  },
+  bottomCard: {
+    width: 220,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
+  bottomCardImage: {
+    width: "100%",
+    height: 120,
+    backgroundColor: "#E8EDEB",
+  },
+  bottomCardContent: {
+    padding: 10,
+    gap: 2,
+  },
+  bottomCardType: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#10A95A",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  bottomCardTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#14342B",
+  },
+  bottomCardSubtitle: {
+    fontSize: 12,
+    color: "#6D7673",
+  },
+
   callout: {
     width: 180,
     padding: 10,
