@@ -9,6 +9,7 @@ import { signOut } from "firebase/auth";
 import { firebaseAuth } from "@/src/services/firebase";
 import {
   authApi,
+  profilesApi,
   setStoredToken,
   clearStoredToken,
   getStoredToken,
@@ -23,6 +24,8 @@ type AuthContextValue = {
   token: string | null;
   isAdmin: boolean;
   isLoading: boolean;
+  profilePhoto: string | null;
+  setProfilePhoto: (url: string | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (firebase_uid: string, email: string) => Promise<void>;
@@ -39,12 +42,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+
+  const fetchProfilePhoto = async (userId: number) => {
+    try {
+      const p = await profilesApi.getById(userId);
+      setProfilePhoto(p.foto_url ?? null);
+    } catch {
+      setProfilePhoto(null);
+    }
+  };
 
   useEffect(() => {
     setUnauthorizedHandler(async () => {
       await clearStoredToken();
       setToken(null);
       setUser(null);
+      setProfilePhoto(null);
     });
   }, []);
 
@@ -56,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(stored);
           const me = await authApi.me();
           setUser(me);
+          await fetchProfilePhoto(me.id_usuario);
         }
       } catch {
         await clearStoredToken();
@@ -72,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
+    await fetchProfilePhoto(me.id_usuario);
   };
 
   const login = async (email: string, password: string) => {
@@ -80,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
+    await fetchProfilePhoto(me.id_usuario);
   };
 
   // Google → Firebase para obtener uid real → firebase-sync
@@ -89,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
+    await fetchProfilePhoto(me.id_usuario);
   };
 
   const logout = async () => {
@@ -96,13 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearStoredToken();
     setToken(null);
     setUser(null);
+    setProfilePhoto(null);
   };
 
   const isAdmin = user?.role === "admin";
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAdmin, isLoading, login, register, loginWithGoogle, logout }}
+      value={{ user, token, isAdmin, isLoading, profilePhoto, setProfilePhoto, login, register, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>

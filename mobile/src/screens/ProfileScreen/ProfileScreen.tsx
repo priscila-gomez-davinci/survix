@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { styles } from "./ProfileScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
-import { profilesApi, type Profile } from "@/src/services/api";
+import { profilesApi, uploadImage, type Profile } from "@/src/services/api";
 
 type ProfileForm = {
   name: string;
@@ -35,7 +37,9 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
 }
 
 export default function ProfileScreen() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, setProfilePhoto } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<ProfileForm>(profileToForm(null, user?.email ?? ""));
@@ -43,6 +47,31 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handlePickPhoto = () => {
+    if (Platform.OS !== "web") return;
+    if (!fileInputRef.current) {
+      const el = document.createElement("input");
+      el.type = "file";
+      el.accept = "image/jpeg,image/png,image/webp";
+      el.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        setUploadingPhoto(true);
+        try {
+          const url = await uploadImage(file);
+          setDraft((d) => ({ ...d, photo_url: url }));
+        } catch {
+          Alert.alert("Error", "No se pudo subir la foto. Intentá de nuevo.");
+        } finally {
+          setUploadingPhoto(false);
+        }
+      };
+      fileInputRef.current = el;
+    }
+    fileInputRef.current.value = "";
+    fileInputRef.current.click();
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +83,7 @@ export default function ProfileScreen() {
         const f = profileToForm(p, user.email);
         setForm(f);
         setDraft(f);
+        setProfilePhoto(p.foto_url ?? null);
       })
       .catch(() => {
         // Profile might not exist yet — start with empty form
@@ -91,6 +121,7 @@ export default function ProfileScreen() {
         const f = profileToForm(updated, user.email);
         setForm(f);
         setDraft(f);
+        setProfilePhoto(updated.foto_url ?? null);
         setIsEditing(false);
       } catch {
         Alert.alert("Error", "No se pudo guardar el perfil. Intentá de nuevo.");
@@ -127,9 +158,36 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroCard}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={34} color="#FFFFFF" />
-          </View>
+          <Pressable
+            style={styles.avatar}
+            onPress={isEditing ? handlePickPhoto : undefined}
+            disabled={uploadingPhoto}
+          >
+            {uploadingPhoto ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (visibleForm.photo_url || form.photo_url) ? (
+              <>
+                <Image
+                  source={{ uri: isEditing ? draft.photo_url || form.photo_url : form.photo_url }}
+                  style={styles.avatarImage}
+                />
+                {isEditing && (
+                  <View style={styles.avatarEditOverlay}>
+                    <Ionicons name="camera" size={16} color="#FFFFFF" />
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
+                <Ionicons name="person" size={34} color="#FFFFFF" />
+                {isEditing && (
+                  <View style={styles.avatarEditOverlay}>
+                    <Ionicons name="camera" size={16} color="#FFFFFF" />
+                  </View>
+                )}
+              </>
+            )}
+          </Pressable>
 
           <View style={styles.heroCopy}>
             <Text style={styles.heroTitle}>{displayName}</Text>
@@ -201,19 +259,30 @@ export default function ProfileScreen() {
             />
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>URL de foto</Text>
-            <TextInput
-              value={visibleForm.photo_url}
-              onChangeText={(v) => handleChange("photo_url", v)}
-              editable={isEditing}
-              style={[styles.input, !isEditing && styles.inputReadonly]}
-              placeholder="https://..."
-              placeholderTextColor="#8A9490"
-              autoCapitalize="none"
-              keyboardType="url"
-            />
-          </View>
+          {isEditing && Platform.OS === "web" && (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Foto de perfil</Text>
+              <Pressable
+                style={styles.photoPickerButton}
+                onPress={handlePickPhoto}
+                disabled={uploadingPhoto}
+              >
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color="#14342B" />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload-outline" size={18} color="#14342B" />
+                    <Text style={styles.photoPickerButtonText}>
+                      {draft.photo_url ? "Cambiar foto" : "Subir foto desde el ordenador"}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+              {draft.photo_url ? (
+                <Text style={styles.photoPickerHint} numberOfLines={1}>{draft.photo_url}</Text>
+              ) : null}
+            </View>
+          )}
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Ciudad</Text>

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
-import { Pressable, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
+import { useAuth } from "@/src/context/AuthContext";
 import { styles } from "./AppFooter.styles";
 
 type NavRoute = {
@@ -20,6 +21,7 @@ const navRoutes: NavRoute[] = [
 export function AppFooter() {
   const router = useRouter();
   const pathname = usePathname();
+  const { profilePhoto } = useAuth();
 
   return (
     <View style={styles.bottomBar}>
@@ -41,7 +43,14 @@ export function AppFooter() {
             ]}
             onPress={() => router.replace(route.path)}
           >
-            <Ionicons name={route.icon} size={22} color={iconColor} />
+            {route.path === "/profile" && profilePhoto ? (
+              <Image
+                source={{ uri: profilePhoto }}
+                style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: isActive ? "#FFFFFF" : "#14342B" }}
+              />
+            ) : (
+              <Ionicons name={route.icon} size={22} color={iconColor} />
+            )}
           </Pressable>
         );
       })}

@@ -102,4 +102,49 @@ export const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 15,
   },
+
+  // ─── Image picker ─────────────────────────────────────────────────────────
+  imagePicker: {
+    borderWidth: 2,
+    borderColor: "#D7DEDB",
+    borderStyle: "dashed",
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  imagePickerInner: {
+    paddingVertical: 28,
+    alignItems: "center",
+    gap: 6,
+  },
+  imagePickerText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#14342B",
+  },
+  imagePickerHint: {
+    fontSize: 12,
+    color: "#8A9490",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+  },
+  imagePickerOverlay: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  imagePickerOverlayText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
 });

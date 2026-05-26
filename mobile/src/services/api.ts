@@ -668,3 +668,25 @@ export const postsApi = {
   deleteComment: (postId: number, commentId: number) =>
     request<void>(`/posts/${postId}/comments/${commentId}`, { method: "DELETE" }, true),
 };
+
+// ─── File upload ──────────────────────────────────────────────────────────────
+
+export async function uploadImage(file: File): Promise<string> {
+  const token = await getStoredToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${BASE_URL}/upload/image`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, (data as any).detail ?? "Error al subir la imagen.");
+  }
+
+  const data = await res.json() as { url: string };
+  return data.url;
+}

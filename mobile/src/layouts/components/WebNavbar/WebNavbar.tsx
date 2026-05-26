@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Platform, Pressable, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { AppDialog } from "@/src/components/AppDialog";
 import { styles } from "./WebNavbar.styles";
@@ -28,7 +28,7 @@ const navRoutes: NavRoute[] = [
 export function WebNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAdmin, user, logout } = useAuth();
+  const { isAdmin, user, logout, profilePhoto } = useAuth();
   const isAdminPage = pathname === "/admin";
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -81,11 +81,18 @@ export function WebNavbar() {
               style={[styles.navItem, isActive && styles.navItemActive]}
               onPress={() => router.replace(route.path)}
             >
-              <Ionicons
-                name={isActive ? route.iconActive : route.icon}
-                size={18}
-                color={isActive ? "#FFFFFF" : "rgba(255,255,255,0.7)"}
-              />
+              {route.path === "/profile" && profilePhoto ? (
+                <Image
+                  source={{ uri: profilePhoto }}
+                  style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: isActive ? "#FFFFFF" : "rgba(255,255,255,0.5)" }}
+                />
+              ) : (
+                <Ionicons
+                  name={isActive ? route.iconActive : route.icon}
+                  size={18}
+                  color={isActive ? "#FFFFFF" : "rgba(255,255,255,0.7)"}
+                />
+              )}
               <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                 {route.label}
               </Text>
