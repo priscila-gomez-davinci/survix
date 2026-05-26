@@ -232,7 +232,26 @@ export default function ListScreen() {
         ) : (
           filteredItems.map((item) => (
             <Pressable key={item.id} style={styles.card} onPress={() => handleItemPress(item)}>
-              <Image source={{ uri: item.image }} style={styles.cardImage} />
+              <View style={styles.cardImageWrapper}>
+                <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+                {isActivity && token ? (
+                  <Pressable
+                    style={styles.favoriteButton}
+                    onPress={() => handleFavoriteToggle(item.id)}
+                    hitSlop={8}
+                  >
+                    {togglingId === item.id ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Ionicons
+                        name={favoriteIds.has(item.id) ? "heart" : "heart-outline"}
+                        size={20}
+                        color={favoriteIds.has(item.id) ? "#FF4D6A" : "#FFFFFF"}
+                      />
+                    )}
+                  </Pressable>
+                ) : null}
+              </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardType}>{title.slice(0, -1)}</Text>
                 <Text style={styles.cardTitle}>{item.title}</Text>
@@ -240,24 +259,6 @@ export default function ListScreen() {
                   <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
                 ) : null}
               </View>
-              {isActivity && token ? (
-                <Pressable
-                  style={styles.favoriteButton}
-                  onPress={() => handleFavoriteToggle(item.id)}
-                  hitSlop={8}
-                >
-                  {togglingId === item.id ? (
-                    <ActivityIndicator size="small" color="#E53E3E" />
-                  ) : (
-                    <Ionicons
-                      name={favoriteIds.has(item.id) ? "heart" : "heart-outline"}
-                      size={20}
-                      color={favoriteIds.has(item.id) ? "#E53E3E" : "#8A9490"}
-                    />
-                  )}
-                </Pressable>
-              ) : null}
-              <Ionicons name="chevron-forward" size={18} color="#8A9490" />
             </Pressable>
           ))
         )}
