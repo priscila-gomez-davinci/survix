@@ -175,6 +175,7 @@ export type Guide = {
   complexity_level_id: number | null;
   latitud?: number | null;
   longitud?: number | null;
+  image?: string;
   steps?: GuideStep[];
   products?: GuideProduct[];
 };
@@ -245,6 +246,7 @@ type _BackendGuide = {
   id_nivel_complejidad: number;
   latitud?: number | null;
   longitud?: number | null;
+  imagen_url?: string | null;
 };
 
 type _BackendPoint = {
@@ -280,6 +282,7 @@ function _mapGuide(g: _BackendGuide): Guide {
     complexity_level_id: g.id_nivel_complejidad,
     latitud: g.latitud,
     longitud: g.longitud,
+    image: g.imagen_url ?? undefined,
   };
 }
 
@@ -568,6 +571,12 @@ export const guidesApi = {
     request<GuideProduct>(`/guides/${id}/products`, {
       method: "POST",
       body: JSON.stringify(product),
+    }, true),
+
+  addImage: (id: number, url: string) =>
+    request<{ id_guia_imagen: number; url: string }>(`/guides/${id}/images`, {
+      method: "POST",
+      body: JSON.stringify({ url }),
     }, true),
 
   addFavorite: (id: number) =>
