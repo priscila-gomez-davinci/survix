@@ -18,7 +18,6 @@ type NavRoute = {
 const navRoutes: NavRoute[] = [
   { path: "/home",    icon: "home-outline",      iconActive: "home",      label: "Inicio" },
   { path: "/map",     icon: "location-outline",  iconActive: "location",  label: "Mapa" },
-  { path: "/compose", icon: "create-outline",    iconActive: "create",    label: "Novedades" },
   { path: "/blog",    icon: "newspaper-outline", iconActive: "newspaper", label: "Blog" },
   { path: "/profile", icon: "person-outline",    iconActive: "person",    label: "Perfil" },
 ];

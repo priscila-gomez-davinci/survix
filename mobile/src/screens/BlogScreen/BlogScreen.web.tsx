@@ -72,12 +72,15 @@ export default function BlogScreen() {
       el.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
+        // Show local preview immediately — no waiting for upload
+        setImageUrl(URL.createObjectURL(file));
         setUploadingPhoto(true);
         try {
-          const url = await uploadImage(file);
-          setImageUrl(url);
+          const serverUrl = await uploadImage(file);
+          setImageUrl(serverUrl);
         } catch {
           Alert.alert("Error", "No se pudo subir la foto. Intentá de nuevo.");
+          setImageUrl(null);
         } finally {
           setUploadingPhoto(false);
         }
@@ -340,11 +343,27 @@ export default function BlogScreen() {
               <Text style={styles.composeLabel}>Foto (opcional)</Text>
               {imageUrl ? (
                 <View>
-                  <Image source={{ uri: imageUrl }} style={styles.composeImagePreview} />
-                  <Pressable style={styles.changePhotoButton} onPress={handlePickPhoto}>
-                    <Ionicons name="camera-outline" size={14} color="#14342B" />
-                    <Text style={styles.changePhotoText}>Cambiar foto</Text>
-                  </Pressable>
+                  <View style={{ position: "relative" }}>
+                    <Image source={{ uri: imageUrl }} style={styles.composeImagePreview} />
+                    {uploadingPhoto && (
+                      <View style={{
+                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 12,
+                        justifyContent: "center", alignItems: "center", gap: 6,
+                      }}>
+                        <ActivityIndicator color="#FFFFFF" />
+                        <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}>
+                          Subiendo...
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {!uploadingPhoto && (
+                    <Pressable style={styles.changePhotoButton} onPress={handlePickPhoto}>
+                      <Ionicons name="camera-outline" size={14} color="#14342B" />
+                      <Text style={styles.changePhotoText}>Cambiar foto</Text>
+                    </Pressable>
+                  )}
                 </View>
               ) : (
                 <Pressable
@@ -352,14 +371,8 @@ export default function BlogScreen() {
                   onPress={handlePickPhoto}
                   disabled={uploadingPhoto}
                 >
-                  {uploadingPhoto ? (
-                    <ActivityIndicator size="small" color="#14342B" />
-                  ) : (
-                    <>
-                      <Ionicons name="cloud-upload-outline" size={18} color="#14342B" />
-                      <Text style={styles.composePhotoButtonText}>Subir foto</Text>
-                    </>
-                  )}
+                  <Ionicons name="cloud-upload-outline" size={18} color="#14342B" />
+                  <Text style={styles.composePhotoButtonText}>Subir foto</Text>
                 </Pressable>
               )}
             </View>
@@ -369,9 +382,9 @@ export default function BlogScreen() {
             ) : null}
 
             <Pressable
-              style={[styles.composeSubmit, submitting && { opacity: 0.6 }]}
+              style={[styles.composeSubmit, (submitting || uploadingPhoto) && { opacity: 0.6 }]}
               onPress={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || uploadingPhoto}
             >
               {submitting ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
