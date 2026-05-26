@@ -682,10 +682,36 @@ export const postsApi = {
 
 // ─── File upload ──────────────────────────────────────────────────────────────
 
+async function _compressImage(file: File, maxDim = 1920, quality = 0.85): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const blobUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
+    img.src = blobUrl;
+  });
+}
+
 export async function uploadImage(file: File): Promise<string> {
+  const compressed = await _compressImage(file);
   const token = await getStoredToken();
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", compressed);
 
   const res = await fetch(`${BASE_URL}/upload/image`, {
     method: "POST",
