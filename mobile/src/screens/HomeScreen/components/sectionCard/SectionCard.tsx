@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, useWindowDimensions, View } from "react-native";
 import type { HomeItem } from "@/src/data/homeData";
 import { styles } from "./SectionCard.styles";
 
@@ -8,8 +8,19 @@ type Props = {
   type: "activity" | "guide" | "equipment";
 };
 
+// containerPaddingH * 2 + gap * 3 cards
+const H_PADDING = 14;
+const CARD_GAP = 14;
+
 export function SectionCard({ item, type }: Props) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+
+  // On wide screens (web): fit exactly 4 cards; on mobile: fixed width shows ~1.5 cards
+  const cardWidth =
+    width >= 700
+      ? Math.floor((width - H_PADDING * 2 - CARD_GAP * 3) / 4)
+      : 240;
 
   const handlePress = () => {
     router.push({
@@ -28,15 +39,25 @@ export function SectionCard({ item, type }: Props) {
     });
   };
 
+  const typeLabel =
+    type === "activity" ? "Actividad"
+    : type === "guide" ? "Guía"
+    : "Equipamiento";
+
   return (
-    <Pressable style={styles.card} onPress={handlePress}>
-      <Image source={{ uri: item.image }} style={styles.image} />
+    <Pressable style={[styles.card, { width: cardWidth }]} onPress={handlePress}>
+      <View>
+        <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{typeLabel}</Text>
+        </View>
+      </View>
       <View style={styles.content}>
-        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.typeLabel}>{typeLabel}</Text>
+        <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
         {item.subtitle ? (
-          <Text style={styles.subtitle}>{item.subtitle}</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>{item.subtitle}</Text>
         ) : null}
-        <Text style={styles.type}>{type}</Text>
       </View>
     </Pressable>
   );
