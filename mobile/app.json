@@ -40,7 +40,8 @@
           "locationWhenInUsePermission": "SurvixApp necesita tu ubicación para mostrar actividades cercanas."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-secure-store"
     ]
   }
 }
