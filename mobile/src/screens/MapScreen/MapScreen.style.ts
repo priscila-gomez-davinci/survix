@@ -67,7 +67,6 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  // ─── Airbnb-style pill markers ───────────────────────────────────────────
   markerLabel: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -103,7 +102,6 @@ export const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  // ─── Bottom card strip ────────────────────────────────────────────────────
   bottomStrip: {
     position: "absolute",
     bottom: 0,
@@ -173,5 +171,60 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#10A95A",
     marginTop: 6,
+  },
+
+  startButton: {
+    marginTop: 8,
+    backgroundColor: "#14342B",
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  startButtonActive: {
+    backgroundColor: "#D93025",
+  },
+  startButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  navBanner: {
+    position: "absolute",
+    bottom: 8,
+    left: 16,
+    right: 16,
+    backgroundColor: "#14342B",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
+  },
+  navBannerText: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  stopButton: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  stopButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

@@ -8,9 +8,10 @@ type SectionProps = {
   title: string;
   items: HomeItem[];
   type: "activity" | "guide" | "equipment";
+  onItemPress?: (item: HomeItem) => void;
 };
 
-export function Section({ title, items, type }: SectionProps) {
+export function Section({ title, items, type, onItemPress }: SectionProps) {
   const router = useRouter();
 
   return (
@@ -28,7 +29,12 @@ export function Section({ title, items, type }: SectionProps) {
         contentContainerStyle={sectionStyles.horizontalList}
       >
         {items.map((item) => (
-          <SectionCard key={item.id} item={item} type={type} />
+          <SectionCard
+            key={item.id}
+            item={item}
+            type={type}
+            onPress={onItemPress ? () => onItemPress(item) : undefined}
+          />
         ))}
       </ScrollView>
     </View>

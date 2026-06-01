@@ -6,23 +6,26 @@ import { styles } from "./SectionCard.styles";
 type Props = {
   item: HomeItem;
   type: "activity" | "guide" | "equipment";
+  onPress?: () => void;
 };
 
-// containerPaddingH * 2 + gap * 3 cards
 const H_PADDING = 14;
 const CARD_GAP = 14;
 
-export function SectionCard({ item, type }: Props) {
+export function SectionCard({ item, type, onPress: onPressProp }: Props) {
   const router = useRouter();
   const { width } = useWindowDimensions();
 
-  // On wide screens (web): fit exactly 4 cards; on mobile: fixed width shows ~1.5 cards
   const cardWidth =
     width >= 700
       ? Math.floor((width - H_PADDING * 2 - CARD_GAP * 3) / 4)
       : 240;
 
   const handlePress = () => {
+    if (onPressProp) {
+      onPressProp();
+      return;
+    }
     router.push({
       pathname: "/detail",
       params: {
