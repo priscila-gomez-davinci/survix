@@ -15,11 +15,6 @@
       "supportsTablet": true
     },
     "android": {
-      "config": {
-        "googleMaps": {
-          "apiKey": "${EXPO_PUBLIC_GOOGLE_MAPS_KEY}"
-        }
-      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -42,6 +37,13 @@
       ],
       "expo-web-browser",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5b7e87af-0d57-4178-870d-4e4e796a2e2d"
+      }
+    },
+    "owner": "scilafeuersturm"
   }
 }

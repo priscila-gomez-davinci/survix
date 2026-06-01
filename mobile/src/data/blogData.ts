@@ -1,23 +1,4 @@
-export type BlogComment = {
-  id: number;
-  text: string;
-  author: string;
-};
-
-export type BlogPost = {
-  id: string;
-  author: string;
-  role: string;
-  authorPhoto?: string;
-  title: string;
-  summary: string;
-  body?: string;
-  image?: string;
-  category: string;
-  likes: number;
-  likedByMe: boolean;
-  comments: BlogComment[];
-};
+import type { BlogComment, BlogPost } from "@/src/services/api";
 
 export const mockPosts: BlogPost[] = [
   {

@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import type { BlogPost } from "@/src/data/blogData";
 import { mockPosts } from "@/src/data/blogData";
-import { postsApi, type PostCreatePayload } from "@/src/services/api";
+import { postsApi, type BlogPost, type PostCreatePayload } from "@/src/services/api";
 
 type PostsContextValue = {
   posts: BlogPost[];
