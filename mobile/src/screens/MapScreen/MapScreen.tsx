@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   SafeAreaView,
@@ -28,6 +29,7 @@ type LocationStatus = "loading" | "granted" | "denied";
 
 export default function MapScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ startActivityId?: string }>();
   const { activities, guides } = useHomeData();
 
   const [region, setRegion] = useState(BUENOS_AIRES);
@@ -35,6 +37,10 @@ export default function MapScreen() {
   const [routePolylines, setRoutePolylines] = useState<{ id: string; coords: { latitude: number; longitude: number }[] }[]>([]);
   const [syntheticMarkers, setSyntheticMarkers] = useState<typeof activities>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
+
+  const mapRef = useRef<MapView>(null);
+  const locationWatchRef = useRef<Location.LocationSubscription | null>(null);
 
   useEffect(() => {
     if (activities.length === 0) return;
@@ -96,6 +102,57 @@ export default function MapScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    const paramId = params.startActivityId;
+    if (!paramId || activeActivityId || routePolylines.length === 0) return;
+    void startNavigation(paramId);
+  }, [params.startActivityId, routePolylines.length]);
+
+  useEffect(() => {
+    return () => {
+      locationWatchRef.current?.remove();
+    };
+  }, []);
+
+  const startNavigation = async (activityId: string) => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      setLocationStatus("denied");
+      Alert.alert(
+        "Ubicación requerida",
+        "Activá el acceso a la ubicación para iniciar la actividad."
+      );
+      return;
+    }
+    setLocationStatus("granted");
+
+    locationWatchRef.current?.remove();
+    locationWatchRef.current = await Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.High, timeInterval: 3000, distanceInterval: 10 },
+      () => {},
+    );
+
+    setActiveActivityId(activityId);
+    setSelectedId(activityId);
+
+    const polyline = routePolylines.find(p => p.id === activityId);
+    if (polyline && polyline.coords.length > 0) {
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(polyline.coords, {
+          edgePadding: { top: 100, right: 40, bottom: 250, left: 40 },
+          animated: true,
+        });
+      }, 300);
+    }
+  };
+
+  // Testea esto Lucas
+  const stopNavigation = () => {
+    locationWatchRef.current?.remove();
+    locationWatchRef.current = null;
+    setActiveActivityId(null);
+  };
+
   const inRegion = (coords: { latitude: number; longitude: number }) =>
     coords.latitude >= region.latitude - region.latitudeDelta / 2 &&
     coords.latitude <= region.latitude + region.latitudeDelta / 2 &&
@@ -120,6 +177,10 @@ export default function MapScreen() {
     });
   };
 
+  const activeActivity = activeActivityId
+    ? [...activities, ...syntheticMarkers].find(a => a.id === activeActivityId)
+    : null;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.mapWrapper}>
@@ -130,6 +191,7 @@ export default function MapScreen() {
           </View>
         ) : (
           <MapView
+            ref={mapRef}
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={region}
@@ -141,8 +203,8 @@ export default function MapScreen() {
               <Polyline
                 key={`poly-${poly.id}`}
                 coordinates={poly.coords}
-                strokeColor="#14342B"
-                strokeWidth={3}
+                strokeColor={activeActivityId === poly.id ? "#10A95A" : "#14342B"}
+                strokeWidth={activeActivityId === poly.id ? 5 : 3}
               />
             ))}
 
@@ -212,7 +274,7 @@ export default function MapScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.bottomStrip}
+            style={[styles.bottomStrip, activeActivityId ? { bottom: 64 } : {}]}
             contentContainerStyle={styles.bottomStripContent}
           >
             {[...visibleActivities, ...visibleSyntheticMarkers].map((item) => (
@@ -228,6 +290,28 @@ export default function MapScreen() {
                   {item.subtitle ? (
                     <Text style={styles.bottomCardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
                   ) : null}
+                  <Pressable
+                    style={[
+                      styles.startButton,
+                      activeActivityId === item.id && styles.startButtonActive,
+                    ]}
+                    onPress={() => {
+                      if (activeActivityId === item.id) {
+                        stopNavigation();
+                      } else {
+                        void startNavigation(item.id);
+                      }
+                    }}
+                  >
+                    <Ionicons
+                      name={activeActivityId === item.id ? "stop-circle-outline" : "navigate-outline"}
+                      size={13}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.startButtonText}>
+                      {activeActivityId === item.id ? "Detener" : "Iniciar"}
+                    </Text>
+                  </Pressable>
                 </View>
               </Pressable>
             ))}
@@ -248,6 +332,18 @@ export default function MapScreen() {
               </Pressable>
             ))}
           </ScrollView>
+        )}
+
+        {activeActivityId && (
+          <View style={styles.navBanner}>
+            <Ionicons name="navigate" size={16} color="#FFFFFF" />
+            <Text style={styles.navBannerText} numberOfLines={1}>
+              {activeActivity?.title ?? "Navegando..."}
+            </Text>
+            <Pressable style={styles.stopButton} onPress={stopNavigation}>
+              <Text style={styles.stopButtonText}>Detener</Text>
+            </Pressable>
+          </View>
         )}
       </View>
     </SafeAreaView>
