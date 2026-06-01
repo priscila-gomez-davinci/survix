@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { styles } from "./MapScreen.style";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { routesApi } from "@/src/services/api";
@@ -130,6 +130,7 @@ export default function MapScreen() {
           </View>
         ) : (
           <MapView
+            provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={region}
             onRegionChangeComplete={setRegion}
