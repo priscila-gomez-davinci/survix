@@ -1,0 +1,282 @@
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#14342B",
+  },
+
+  // ─── Hero ─────────────────────────────────────────────────────────────────
+  heroWrapper: {
+    position: "relative",
+    overflow: "hidden",
+  },
+  heroImage: {
+    width: "100%",
+    height: 290,
+  },
+  heroPlaceholder: {
+    width: "100%",
+    height: 290,
+    backgroundColor: "#14342B",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backBtn: {
+    position: "absolute",
+    top: 18,
+    left: 18,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(0,0,0,0.38)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  durationBadge: {
+    position: "absolute",
+    bottom: 44,
+    left: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  durationBadgeText: {
+    fontWeight: "700",
+    fontSize: 14,
+    color: "#14342B",
+  },
+  offlineBadge: {
+    position: "absolute",
+    bottom: 44,
+    right: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#14342B",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  offlineBadgeText: {
+    fontWeight: "700",
+    fontSize: 12,
+    color: "#76E2B3",
+  },
+
+  // ─── Content card ─────────────────────────────────────────────────────────
+  content: {
+    backgroundColor: "#F5F6F5",
+    marginTop: -24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingHorizontal: 18,
+    paddingTop: 22,
+    paddingBottom: 32,
+    gap: 0,
+  },
+  categoryLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#10A95A",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#14342B",
+    marginBottom: 12,
+    lineHeight: 32,
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 23,
+    color: "#3D5249",
+    marginBottom: 6,
+  },
+
+  // ─── Summary mode banner ──────────────────────────────────────────────────
+  summaryBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F4EE",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+    marginBottom: 20,
+    marginTop: 4,
+  },
+  summaryBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#14342B",
+    fontWeight: "500",
+  },
+  summaryBannerLink: {
+    fontSize: 13,
+    color: "#10A95A",
+    fontWeight: "700",
+  },
+
+  // ─── Section title ─────────────────────────────────────────────────────────
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#14342B",
+    marginBottom: 14,
+    marginTop: 20,
+  },
+
+  // ─── Step cards ───────────────────────────────────────────────────────────
+  stepCard: {
+    flexDirection: "row",
+    gap: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  stepBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#14342B",
+    justifyContent: "center",
+    alignItems: "center",
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  stepBadgeText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+  stepBody: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#14342B",
+    marginBottom: 4,
+  },
+  stepDesc: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#4D5E58",
+  },
+
+  // ─── "Ver más pasos" button ────────────────────────────────────────────────
+  expandBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#E8F4EE",
+    borderRadius: 14,
+    paddingVertical: 12,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  expandBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#14342B",
+  },
+
+  // ─── Download button ──────────────────────────────────────────────────────
+  downloadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#14342B",
+    borderRadius: 16,
+    height: 52,
+    marginTop: 22,
+    shadowColor: "#14342B",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  downloadBtnSaved: {
+    backgroundColor: "#10A95A",
+  },
+  downloadBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  removeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#C5D4CE",
+    borderRadius: 16,
+    height: 46,
+    marginTop: 10,
+  },
+  removeBtnText: {
+    color: "#8A9490",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  // ─── Products ─────────────────────────────────────────────────────────────
+  productCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  productName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#14342B",
+    marginBottom: 3,
+  },
+  productUrl: {
+    fontSize: 12,
+    color: "#8A9490",
+  },
+
+  // ─── Empty / loading ──────────────────────────────────────────────────────
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  emptyText: {
+    color: "#8A9490",
+    fontSize: 15,
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
+});

@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from "@/src/context/AuthContext";
 import { HomeDataProvider } from "@/src/context/HomeDataContext";
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["splash", "login", "register", "forgot-password", "index"];
+const PUBLIC_ROUTES = ["splash", "login", "register", "forgot-password", "index", "about", "contact", "tips", "tip-detail", "plans"];
 
 function AuthGate() {
   const { token, isLoading } = useAuth();

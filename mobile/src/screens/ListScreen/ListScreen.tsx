@@ -107,6 +107,19 @@ export default function ListScreen() {
   };
 
   const handleItemPress = (item: HomeItem) => {
+    if (type === "guide") {
+      router.push({
+        pathname: "/guide-detail",
+        params: {
+          id: item.id,
+          title: item.title,
+          subtitle: item.subtitle ?? "",
+          description: item.description ?? "",
+          image: item.image,
+        },
+      });
+      return;
+    }
     router.push({
       pathname: "/detail",
       params: {

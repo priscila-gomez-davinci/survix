@@ -17,6 +17,7 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { styles } from "./MapScreen.style";
 import { useHomeData } from "@/src/context/HomeDataContext";
 import { routesApi } from "@/src/services/api";
+import { offlineService } from "@/src/services/offlineService";
 
 const BUENOS_AIRES = {
   latitude: -34.6037,
@@ -38,6 +39,7 @@ export default function MapScreen() {
   const [syntheticMarkers, setSyntheticMarkers] = useState<typeof activities>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
+  const [mapSaved, setMapSaved] = useState(false);
 
   const mapRef = useRef<MapView>(null);
   const locationWatchRef = useRef<Location.LocationSubscription | null>(null);
@@ -164,6 +166,19 @@ export default function MapScreen() {
   const visibleGuides = guides.filter((g) => g.coordinates && inRegion(g.coordinates!));
 
   const handleCalloutPress = (item: typeof activities[number], type: "activity" | "guide") => {
+    if (type === "guide") {
+      router.push({
+        pathname: "/guide-detail",
+        params: {
+          id: item.id,
+          title: item.title,
+          subtitle: item.subtitle ?? "",
+          description: item.description ?? "",
+          image: item.image,
+        },
+      });
+      return;
+    }
     router.push({
       pathname: "/detail",
       params: {
@@ -175,6 +190,30 @@ export default function MapScreen() {
         image: item.image,
       },
     });
+  };
+
+  const handleDownloadMap = () => {
+    Alert.alert(
+      "Descargar área del mapa",
+      `¿Guardar esta zona para usar sin internet?\n\nCentro: ${region.latitude.toFixed(3)}, ${region.longitude.toFixed(3)}`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Descargar",
+          onPress: async () => {
+            const label = `Zona ${new Date().toLocaleDateString("es-AR")}`;
+            await offlineService.saveMap({
+              id: `map_${Date.now()}`,
+              label,
+              region,
+              savedAt: new Date().toISOString(),
+            });
+            setMapSaved(true);
+            setTimeout(() => setMapSaved(false), 3000);
+          },
+        },
+      ]
+    );
   };
 
   const activeActivity = activeActivityId
@@ -345,6 +384,36 @@ export default function MapScreen() {
             </Pressable>
           </View>
         )}
+
+        {/* Download area FAB */}
+        <Pressable
+          style={{
+            position: "absolute",
+            top: 70,
+            right: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            backgroundColor: mapSaved ? "#10A95A" : "#14342B",
+            borderRadius: 22,
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            shadowColor: "#000",
+            shadowOpacity: 0.22,
+            shadowRadius: 6,
+            elevation: 4,
+          }}
+          onPress={handleDownloadMap}
+        >
+          <Ionicons
+            name={mapSaved ? "checkmark-circle" : "download-outline"}
+            size={16}
+            color="#FFFFFF"
+          />
+          <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "700" }}>
+            {mapSaved ? "Guardado" : "Descargar área"}
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

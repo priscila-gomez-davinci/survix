@@ -4,7 +4,7 @@ import { Pressable } from "react-native";
 import type { User, Guide, Route } from "@/src/services/api";
 import { styles, C } from "../AdminScreen.styles";
 
-type Page = "dashboard" | "users" | "routes" | "guides";
+type Page = "dashboard" | "users" | "routes" | "guides" | "content" | "analytics";
 
 type Props = {
   onNavigate: (page: Page) => void;
@@ -99,9 +99,11 @@ export function DashboardTab({ onNavigate, users, guides, routes, loading }: Pro
   ].slice(0, 7);
 
   const quickLinks: { page: Page; icon: keyof typeof Ionicons.glyphMap; label: string; color: string }[] = [
-    { page: "users",  icon: "people-outline", label: "Gestionar usuarios",    color: C.greenDark },
-    { page: "routes", icon: "map-outline",    label: "Gestionar actividades", color: C.blue },
-    { page: "guides", icon: "book-outline",   label: "Gestionar guías",       color: "#7c3aed" },
+    { page: "users",     icon: "people-outline",    label: "Gestionar usuarios",    color: C.greenDark },
+    { page: "routes",    icon: "map-outline",       label: "Gestionar actividades", color: C.blue },
+    { page: "guides",    icon: "book-outline",      label: "Gestionar guías",       color: "#7c3aed" },
+    { page: "content",   icon: "create-outline",    label: "Editar contenido",      color: "#d97706" },
+    { page: "analytics", icon: "bar-chart-outline", label: "Ver analytics",         color: "#0891b2" },
   ];
 
   return (

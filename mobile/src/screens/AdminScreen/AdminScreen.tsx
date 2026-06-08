@@ -8,11 +8,13 @@ import { DashboardTab } from "./tabs/DashboardTab";
 import { UsersTab } from "./tabs/UsersTab";
 import { RoutesTab } from "./tabs/RoutesTab";
 import { GuidesTab } from "./tabs/GuidesTab";
+import { ContentTab } from "./tabs/ContentTab";
+import { AnalyticsTab } from "./tabs/AnalyticsTab";
 import { styles, C } from "./AdminScreen.styles";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Page = "dashboard" | "users" | "routes" | "guides";
+type Page = "dashboard" | "users" | "routes" | "guides" | "content" | "analytics";
 
 type SidebarItem = { id: Page; icon: keyof typeof Ionicons.glyphMap; text: string; badge?: number };
 type SidebarSection = { label: string; items: SidebarItem[] };
@@ -87,6 +89,13 @@ export default function AdminScreen() {
         { id: "routes", icon: "map-outline",    text: "Actividades", badge: dataLoading ? undefined : routes.length },
       ],
     },
+    {
+      label: "Contenido y reportes",
+      items: [
+        { id: "content",   icon: "create-outline",     text: "Contenido" },
+        { id: "analytics", icon: "bar-chart-outline",  text: "Analytics" },
+      ],
+    },
   ];
 
   const renderPage = () => {
@@ -101,9 +110,11 @@ export default function AdminScreen() {
             loading={dataLoading}
           />
         );
-      case "users":  return <UsersTab />;
-      case "routes": return <RoutesTab />;
-      case "guides": return <GuidesTab />;
+      case "users":     return <UsersTab />;
+      case "routes":    return <RoutesTab />;
+      case "guides":    return <GuidesTab />;
+      case "content":   return <ContentTab />;
+      case "analytics": return <AnalyticsTab />;
     }
   };
 

@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
@@ -109,6 +110,44 @@ export default function HomeScreen() {
             onChangeText={setQuery}
           />
         </View>
+
+        {/* Tips de supervivencia — entry banner */}
+        {!isSearchActive && (
+          <Pressable
+            onPress={() => router.push("/tips")}
+            style={{
+              backgroundColor: "#14342B",
+              borderRadius: 20,
+              padding: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 2,
+            }}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: "rgba(255,255,255,0.15)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="shield-half-outline" size={22} color="#76E2B3" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "800" }}>
+                Tips de supervivencia
+              </Text>
+              <Text style={{ color: "#D7E9E2", fontSize: 12 }}>
+                Primeros auxilios · Refugios · Agua · Orientación
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#76E2B3" />
+          </Pressable>
+        )}
 
         {!hasResults && isSearchActive ? (
           <Text style={styles.emptyText}>
