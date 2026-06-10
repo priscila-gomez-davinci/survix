@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
 type SocialLink = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -15,6 +16,8 @@ const SOCIAL_LINKS: SocialLink[] = [
 ];
 
 export function WebFooter() {
+  const router = useRouter();
+
   const openLink = (url: string) => {
     (globalThis as unknown as { open: (url: string, target: string) => void }).open(
       url,
@@ -42,6 +45,16 @@ export function WebFooter() {
         <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginLeft: 12 }}>
           © {new Date().getFullYear()} Todos los derechos reservados
         </Text>
+      </View>
+
+      {/* Footer links */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 20 }}>
+        <Pressable onPress={() => router.push("/about")}>
+          <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13 }}>Quiénes somos</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/contact")}>
+          <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13 }}>Contacto</Text>
+        </Pressable>
       </View>
 
       {/* Social icons */}

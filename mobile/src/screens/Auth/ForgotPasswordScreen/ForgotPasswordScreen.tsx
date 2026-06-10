@@ -39,7 +39,6 @@ export default function ForgotPasswordScreen() {
     try {
       await sendPasswordResetEmail(firebaseAuth, email.trim());
     } catch {
-      // Silencioso: no revelar si el correo existe o no
     } finally {
       setLoading(false);
       setSent(true);

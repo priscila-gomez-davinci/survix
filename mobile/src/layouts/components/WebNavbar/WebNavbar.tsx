@@ -9,7 +9,7 @@ import { styles } from "./WebNavbar.styles";
 const AVATAR_BG = "#2a4f38";
 
 type NavRoute = {
-  path: "/home" | "/map" | "/compose" | "/blog" | "/profile";
+  path: "/home" | "/map" | "/compose" | "/blog" | "/profile" | "/plans";
   icon: keyof typeof Ionicons.glyphMap;
   iconActive: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -19,6 +19,7 @@ const navRoutes: NavRoute[] = [
   { path: "/home",    icon: "home-outline",      iconActive: "home",      label: "Inicio" },
   { path: "/map",     icon: "location-outline",  iconActive: "location",  label: "Mapa" },
   { path: "/blog",    icon: "newspaper-outline", iconActive: "newspaper", label: "Blog" },
+  { path: "/plans",   icon: "star-outline",      iconActive: "star",      label: "Planes" },
   { path: "/profile", icon: "person-outline",    iconActive: "person",    label: "Perfil" },
 ];
 

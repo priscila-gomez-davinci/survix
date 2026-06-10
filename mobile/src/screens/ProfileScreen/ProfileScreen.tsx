@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { styles } from "./ProfileScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
 import { profilesApi, uploadImage, type Profile } from "@/src/services/api";
@@ -38,6 +39,7 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
 
 export default function ProfileScreen() {
   const { user, isAdmin, setProfilePhoto } = useAuth();
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -86,7 +88,6 @@ export default function ProfileScreen() {
         setProfilePhoto(p.foto_url ?? null);
       })
       .catch(() => {
-        // Profile might not exist yet — start with empty form
         const f = profileToForm(null, user.email);
         setForm(f);
         setDraft(f);
@@ -330,6 +331,56 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>—</Text>
             <Text style={styles.statLabel}>consultas abiertas</Text>
           </View>
+        </View>
+
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 22, overflow: "hidden" }}>
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}
+            onPress={() => router.push("/plans")}
+          >
+            <Ionicons name="star-outline" size={20} color="#14342B" />
+            <Text style={{ color: "#173B32", fontSize: 14, fontWeight: "600", flex: 1 }}>
+              Planes y precios
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#8A9490" />
+          </Pressable>
+          {Platform.OS !== "web" && (
+            <>
+              <View style={{ height: 1, backgroundColor: "#EEF2F0", marginHorizontal: 16 }} />
+              <Pressable
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}
+                onPress={() => router.push("/offline")}
+              >
+                <Ionicons name="cloud-offline-outline" size={20} color="#14342B" />
+                <Text style={{ color: "#173B32", fontSize: 14, fontWeight: "600", flex: 1 }}>
+                  Contenido descargado
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#8A9490" />
+              </Pressable>
+            </>
+          )}
+          <View style={{ height: 1, backgroundColor: "#EEF2F0", marginHorizontal: 16 }} />
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}
+            onPress={() => router.push("/about")}
+          >
+            <Ionicons name="information-circle-outline" size={20} color="#14342B" />
+            <Text style={{ color: "#173B32", fontSize: 14, fontWeight: "600", flex: 1 }}>
+              Quiénes somos
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#8A9490" />
+          </Pressable>
+          <View style={{ height: 1, backgroundColor: "#EEF2F0", marginHorizontal: 16 }} />
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}
+            onPress={() => router.push("/contact")}
+          >
+            <Ionicons name="mail-outline" size={20} color="#14342B" />
+            <Text style={{ color: "#173B32", fontSize: 14, fontWeight: "600", flex: 1 }}>
+              Contacto
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#8A9490" />
+          </Pressable>
         </View>
 
       </ScrollView>

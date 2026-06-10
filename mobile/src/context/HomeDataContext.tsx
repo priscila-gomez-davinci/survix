@@ -58,8 +58,6 @@ function guideToHomeItem(guide: Guide): HomeItem {
   };
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type HomeDataContextValue = {
   activities: HomeItem[];
   guides: HomeItem[];
@@ -69,11 +67,7 @@ type HomeDataContextValue = {
   refresh: () => void;
 };
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const HomeDataContext = createContext<HomeDataContextValue | null>(null);
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function HomeDataProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<HomeItem[]>([]);
@@ -116,8 +110,6 @@ export function HomeDataProvider({ children }: { children: ReactNode }) {
     </HomeDataContext.Provider>
   );
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useHomeData() {
   const ctx = useContext(HomeDataContext);
