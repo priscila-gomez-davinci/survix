@@ -17,8 +17,6 @@ import {
   type User,
 } from "@/src/services/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type AuthContextValue = {
   user: User | null;
   token: string | null;
@@ -32,11 +30,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
 };
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -80,7 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // Email/password → backend endpoints directly (firebase_uid queda nullable)
   const register = async (email: string, password: string) => {
     const { access_token } = await authApi.register(email, password);
     await setStoredToken(access_token);
@@ -99,7 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchProfilePhoto(me.id_usuario);
   };
 
-  // Google → Firebase para obtener uid real → firebase-sync
   const loginWithGoogle = async (firebase_uid: string, email: string, id_token?: string) => {
     const { access_token } = await authApi.firebaseSync(firebase_uid, email, id_token);
     await setStoredToken(access_token);
@@ -127,8 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useAuth() {
   const ctx = useContext(AuthContext);

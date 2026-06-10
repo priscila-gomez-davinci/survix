@@ -3,8 +3,6 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-nativ
 import { Ionicons } from "@expo/vector-icons";
 import { styles, C } from "../AdminScreen.styles";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Platform = "all" | "web" | "mobile";
 type ExportFormat = "csv" | "pdf";
 
@@ -20,8 +18,6 @@ type AnalyticsData = {
   };
 };
 
-// ─── Data generation (simulated) ─────────────────────────────────────────────
-
 function parseDateSafe(str: string): Date | null {
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
@@ -32,7 +28,6 @@ function computeAnalytics(from: string, to: string, platform: Platform): Analyti
   const toDate = parseDateSafe(to) ?? new Date();
   const days = Math.max(1, Math.floor((toDate.getTime() - fromDate.getTime()) / 86400000));
 
-  // Deterministic seed from date
   const seed = (fromDate.getDate() + fromDate.getMonth() * 7 + fromDate.getFullYear() * 3) % 100;
   const scale = days / 30;
   const platformMult = platform === "mobile" ? 0.42 : platform === "web" ? 0.58 : 1.0;
@@ -72,8 +67,6 @@ function computeAnalytics(from: string, to: string, platform: Platform): Analyti
   };
 }
 
-// ─── BarChart ─────────────────────────────────────────────────────────────────
-
 function BarChart({ items }: { items: SectionData[] }) {
   const max = Math.max(...items.map((d) => d.value), 1);
   return (
@@ -102,8 +95,6 @@ function BarChart({ items }: { items: SectionData[] }) {
   );
 }
 
-// ─── StatCard ─────────────────────────────────────────────────────────────────
-
 function StatCard({ label, value, delta }: { label: string; value: string | number; delta?: string }) {
   return (
     <View style={[styles.statCard, { flex: 1 }]}>
@@ -113,8 +104,6 @@ function StatCard({ label, value, delta }: { label: string; value: string | numb
     </View>
   );
 }
-
-// ─── Export helpers (web-only) ────────────────────────────────────────────────
 
 function exportCSV(data: AnalyticsData, from: string, to: string) {
   const lines = [
@@ -204,8 +193,6 @@ function exportPDF(data: AnalyticsData, from: string, to: string) {
   (win as unknown as { print: () => void }).print();
 }
 
-// ─── AnalyticsTab ─────────────────────────────────────────────────────────────
-
 const today = new Date().toISOString().split("T")[0];
 const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
 
@@ -235,7 +222,6 @@ export function AnalyticsTab() {
         setExportDone(true);
         setTimeout(() => setExportDone(false), 3000);
       } catch {
-        // fail silently
       } finally {
         setExporting(false);
       }
@@ -244,7 +230,6 @@ export function AnalyticsTab() {
 
   return (
     <View style={{ gap: 24 }}>
-      {/* Page header */}
       <View style={styles.pageHeader}>
         <View>
           <Text style={styles.pageTitle}>Analytics</Text>
@@ -253,7 +238,6 @@ export function AnalyticsTab() {
           </Text>
         </View>
 
-        {/* Export buttons */}
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           {exportDone && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -283,13 +267,11 @@ export function AnalyticsTab() {
         </View>
       </View>
 
-      {/* Filters */}
       <View style={[styles.panelCard, { overflow: "visible" as never }]}>
         <View style={styles.panelHeader}>
           <Text style={styles.panelTitle}>Filtros del reporte</Text>
         </View>
         <View style={[styles.panelBody, { flexDirection: "row", flexWrap: "wrap", gap: 20, alignItems: "flex-end" }]}>
-          {/* Date range */}
           <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-end" }}>
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Desde</Text>
@@ -313,7 +295,6 @@ export function AnalyticsTab() {
             </View>
           </View>
 
-          {/* Platform filter */}
           <View>
             <Text style={[styles.formLabel, { marginBottom: 6 }]}>Plataforma</Text>
             <View style={{ flexDirection: "row", gap: 6 }}>
@@ -342,7 +323,6 @@ export function AnalyticsTab() {
         </View>
       </View>
 
-      {/* Summary stats */}
       <View style={styles.statsRow}>
         <StatCard
           label="Visitas totales"
@@ -366,7 +346,6 @@ export function AnalyticsTab() {
         />
       </View>
 
-      {/* Section visits chart */}
       <View style={styles.panelCard}>
         <View style={styles.panelHeader}>
           <Text style={styles.panelTitle}>Visitas por sección</Text>
@@ -379,7 +358,6 @@ export function AnalyticsTab() {
         </View>
       </View>
 
-      {/* Mobile-specific stats */}
       {showMobileStats && (
         <View style={{ gap: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -387,7 +365,6 @@ export function AnalyticsTab() {
             <Text style={[styles.panelTitle, { fontSize: 16 }]}>Estadísticas Mobile</Text>
           </View>
 
-          {/* Mobile summary cards */}
           <View style={styles.statsRow}>
             <StatCard
               label="Descargas offline"
@@ -406,7 +383,6 @@ export function AnalyticsTab() {
             />
           </View>
 
-          {/* Top tips table */}
           <View style={styles.panelCard}>
             <View style={styles.panelHeader}>
               <Text style={styles.panelTitle}>Tips más consultados en Mobile</Text>

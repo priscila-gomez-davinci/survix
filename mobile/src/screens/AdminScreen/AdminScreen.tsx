@@ -12,14 +12,10 @@ import { ContentTab } from "./tabs/ContentTab";
 import { AnalyticsTab } from "./tabs/AnalyticsTab";
 import { styles, C } from "./AdminScreen.styles";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Page = "dashboard" | "users" | "routes" | "guides" | "content" | "analytics";
 
 type SidebarItem = { id: Page; icon: keyof typeof Ionicons.glyphMap; text: string; badge?: number };
 type SidebarSection = { label: string; items: SidebarItem[] };
-
-// ─── Not available on mobile ──────────────────────────────────────────────────
 
 function MobileUnsupported() {
   const router = useRouter();
@@ -36,8 +32,6 @@ function MobileUnsupported() {
   );
 }
 
-// ─── Access denied ────────────────────────────────────────────────────────────
-
 function AccessDenied() {
   const router = useRouter();
   return (
@@ -50,8 +44,6 @@ function AccessDenied() {
     </SafeAreaView>
   );
 }
-
-// ─── Main panel ───────────────────────────────────────────────────────────────
 
 export default function AdminScreen() {
   const { isAdmin } = useAuth();
@@ -120,7 +112,6 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Sidebar */}
       <ScrollView style={styles.sidebar} showsVerticalScrollIndicator={false}>
         {SECTIONS.map((section) => (
           <View key={section.label}>
@@ -153,7 +144,6 @@ export default function AdminScreen() {
         ))}
       </ScrollView>
 
-      {/* Main content */}
       <ScrollView
         style={styles.main}
         contentContainerStyle={styles.mainContent}

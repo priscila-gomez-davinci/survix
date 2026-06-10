@@ -24,8 +24,6 @@ import { ApiError } from "@/src/services/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Errors = {
@@ -47,8 +45,6 @@ function validate(email: string, password: string): Errors {
   return errors;
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export default function LoginScreen() {
   const router = useRouter();
   const { login, loginWithGoogle } = useAuth();
@@ -62,7 +58,6 @@ export default function LoginScreen() {
   const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
-  // ─── Google auth session ──────────────────────────────────────────────────
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleClientId,
     androidClientId: googleAndroidClientId,
@@ -111,7 +106,6 @@ export default function LoginScreen() {
     })();
   }, [response]);
 
-  // ─── Google sign-in (web) — Firebase popup, no redirect_uri needed ──────
   const handleGoogleSignInWeb = async () => {
     setGoogleLoading(true);
     try {
@@ -120,7 +114,6 @@ export default function LoginScreen() {
       await loginWithGoogle(result.user.uid, result.user.email ?? "");
       router.replace("/home");
     } catch (error) {
-      console.error("[Google login error]", error);
       const msg = error instanceof FirebaseError ? error.code : "Error inesperado";
       Alert.alert("No se pudo iniciar sesión con Google", msg);
     } finally {
@@ -128,7 +121,6 @@ export default function LoginScreen() {
     }
   };
 
-  // ─── Email login → backend directo ───────────────────────────────────────
   const handleLogin = async () => {
     const validationErrors = validate(email, password);
     if (Object.keys(validationErrors).length > 0) {
@@ -141,7 +133,6 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace("/home");
     } catch (error) {
-      console.error("[Login error]", error);
       if (error instanceof ApiError) {
         if (error.status === 401 || error.status === 400) {
           setErrors({ general: "Correo o contraseña incorrectos." });

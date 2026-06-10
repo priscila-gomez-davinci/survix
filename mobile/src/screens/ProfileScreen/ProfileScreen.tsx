@@ -88,7 +88,6 @@ export default function ProfileScreen() {
         setProfilePhoto(p.foto_url ?? null);
       })
       .catch(() => {
-        // Profile might not exist yet — start with empty form
         const f = profileToForm(null, user.email);
         setForm(f);
         setDraft(f);

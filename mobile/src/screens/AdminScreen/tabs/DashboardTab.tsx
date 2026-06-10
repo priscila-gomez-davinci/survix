@@ -1,6 +1,5 @@
-import { Text, View } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
 import type { User, Guide, Route } from "@/src/services/api";
 import { styles, C } from "../AdminScreen.styles";
 
@@ -13,8 +12,6 @@ type Props = {
   routes: Route[];
   loading: boolean;
 };
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -35,8 +32,6 @@ function StatCard({
     </View>
   );
 }
-
-// ─── Distribution bar ────────────────────────────────────────────────────────
 
 function DistBar({
   label,
@@ -63,8 +58,6 @@ function DistBar({
   );
 }
 
-// ─── Activity item ────────────────────────────────────────────────────────────
-
 type ActivityEntry = { id: string; dot: string; text: string };
 
 function ActivityItem({ item, last }: { item: ActivityEntry; last: boolean }) {
@@ -76,15 +69,12 @@ function ActivityItem({ item, last }: { item: ActivityEntry; last: boolean }) {
   );
 }
 
-// ─── DashboardTab ────────────────────────────────────────────────────────────
-
 export function DashboardTab({ onNavigate, users, guides, routes, loading }: Props) {
   const month = new Date().toLocaleString("es-AR", { month: "long", year: "numeric" });
   const monthLabel = month.charAt(0).toUpperCase() + month.slice(1);
 
   const total = users.length + guides.length + routes.length;
 
-  // Build activity feed from available data
   const activityEntries: ActivityEntry[] = [
     ...routes.slice(0, 4).map((r) => ({
       id: `r-${r.id}`,
@@ -108,7 +98,6 @@ export function DashboardTab({ onNavigate, users, guides, routes, loading }: Pro
 
   return (
     <View>
-      {/* Page header */}
       <View style={styles.pageHeader}>
         <View>
           <Text style={styles.pageTitle}>Panel General</Text>
@@ -116,7 +105,6 @@ export function DashboardTab({ onNavigate, users, guides, routes, loading }: Pro
         </View>
       </View>
 
-      {/* Stats row */}
       <View style={styles.statsRow}>
         <StatCard
           label="Usuarios Totales"
@@ -141,9 +129,7 @@ export function DashboardTab({ onNavigate, users, guides, routes, loading }: Pro
         />
       </View>
 
-      {/* Bottom panels */}
       <View style={styles.dashboardRow}>
-        {/* Activity feed */}
         <View style={[styles.panelCard, { flex: 2 }]}>
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Actividad reciente</Text>
@@ -165,9 +151,7 @@ export function DashboardTab({ onNavigate, users, guides, routes, loading }: Pro
           </View>
         </View>
 
-        {/* Right column */}
         <View style={{ flex: 1, gap: 16 }}>
-          {/* Distribution */}
           <View style={styles.panelCard}>
             <View style={styles.panelHeader}>
               <Text style={styles.panelTitle}>Distribución por sección</Text>
@@ -179,7 +163,6 @@ export function DashboardTab({ onNavigate, users, guides, routes, loading }: Pro
             </View>
           </View>
 
-          {/* Quick links */}
           <View style={styles.panelCard}>
             <View style={styles.panelHeader}>
               <Text style={styles.panelTitle}>Accesos rápidos</Text>

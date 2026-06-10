@@ -24,8 +24,6 @@ import { ApiError } from "@/src/services/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Errors = {
@@ -55,8 +53,6 @@ function validate(email: string, password: string, confirmPassword: string): Err
   return errors;
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, loginWithGoogle } = useAuth();
@@ -71,7 +67,6 @@ export default function RegisterScreen() {
   const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
-  // ─── Google auth session ──────────────────────────────────────────────────
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleClientId,
     androidClientId: googleAndroidClientId,
@@ -120,7 +115,6 @@ export default function RegisterScreen() {
     })();
   }, [response]);
 
-  // ─── Google sign-in (web) — Firebase popup, no redirect_uri needed ──────
   const handleGoogleSignInWeb = async () => {
     setGoogleLoading(true);
     try {
@@ -129,7 +123,6 @@ export default function RegisterScreen() {
       await loginWithGoogle(result.user.uid, result.user.email ?? "");
       router.replace("/home");
     } catch (error) {
-      console.error("[Google register error]", error);
       const msg = error instanceof FirebaseError ? error.code : "Error inesperado";
       Alert.alert("No se pudo completar el registro con Google", msg);
     } finally {
@@ -137,7 +130,6 @@ export default function RegisterScreen() {
     }
   };
 
-  // ─── Email register → backend directo ────────────────────────────────────
   const handleRegister = async () => {
     const validationErrors = validate(email, password, confirmPassword);
     if (Object.keys(validationErrors).length > 0) {
@@ -150,7 +142,6 @@ export default function RegisterScreen() {
       await register(email.trim(), password);
       router.replace("/home");
     } catch (error) {
-      console.error("[Register error]", error);
       if (error instanceof ApiError) {
         if (error.status === 409 || error.status === 400) {
           setErrors({ email: "Ya existe una cuenta con ese correo." });
