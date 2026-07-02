@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { styles } from "./ProfileScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSubscription } from "@/src/hooks/useSubscription";
 import {
   guidesApi,
   postsApi,
@@ -23,6 +24,8 @@ import {
   uploadImage,
   type Profile,
 } from "@/src/services/api";
+
+const PLAN_NAME = { premium: "Aventurero", pro: "Experto" } as const;
 
 type ProfileForm = {
   name: string;
@@ -52,6 +55,7 @@ type ProfileStats = {
 
 export default function ProfileScreen() {
   const { user, isAdmin, setProfilePhoto, logout } = useAuth();
+  const { record: subscription } = useSubscription();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -392,9 +396,16 @@ export default function ProfileScreen() {
             onPress={() => router.push("/plans")}
           >
             <Ionicons name="star-outline" size={20} color="#14342B" />
-            <Text style={{ color: "#173B32", fontSize: 14, fontWeight: "600", flex: 1 }}>
-              Planes y precios
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "#173B32", fontSize: 14, fontWeight: "600" }}>
+                Planes y precios
+              </Text>
+              <Text style={{ color: "#72847D", fontSize: 12, marginTop: 2 }}>
+                {subscription?.activa
+                  ? `Plan actual: ${PLAN_NAME[subscription.plan]} · gestionar suscripción`
+                  : "Plan actual: Explorador (gratis)"}
+              </Text>
+            </View>
             <Ionicons name="chevron-forward" size={16} color="#8A9490" />
           </Pressable>
           {Platform.OS !== "web" && (

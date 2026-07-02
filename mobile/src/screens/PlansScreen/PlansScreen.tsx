@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,23 +10,16 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
-import { db } from "@/src/services/firebase";
 import { useAuth } from "@/src/context/AuthContext";
 import { AppDialog } from "@/src/components/AppDialog";
+import { useSubscription, type PaidPlanId } from "@/src/hooks/useSubscription";
 import { PLANS, COMPARISON_FEATURES, type PlanId } from "@/src/data/plansData";
 import { styles } from "./PlansScreen.styles";
 
-type TrialRecord = {
-  activa: boolean;
-  fin: Timestamp;
+const PLAN_NAME: Record<PaidPlanId, string> = {
+  premium: "Aventurero",
+  pro: "Experto",
 };
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" });
@@ -43,96 +36,63 @@ function CellValue({ value }: { value: string | boolean }) {
 }
 
 export default function PlansScreen() {
-  const { user, token } = useAuth();
-  const [trialRecord, setTrialRecord] = useState<TrialRecord | null>(null);
-  const [checkingTrial, setCheckingTrial] = useState(true);
-  const [activating, setActivating] = useState(false);
+  const { token } = useAuth();
+  const { record, loading: checkingSubscription, activate, cancel } = useSubscription();
+  const [activatingPlan, setActivatingPlan] = useState<PaidPlanId | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      setCheckingTrial(false);
-      return;
+  const hasActiveSubscription = !!record?.activa;
+  const activePlanId = hasActiveSubscription ? record!.plan : null;
+  const trialEndDate = record?.fin ? formatDate(record.fin.toDate()) : null;
+
+  const doActivatePlan = async (planId: PaidPlanId) => {
+    setActivatingPlan(planId);
+    try {
+      await activate(planId);
+    } catch {
+      Alert.alert("Error", "No se pudo activar el plan. Intentá de nuevo.");
+    } finally {
+      setActivatingPlan(null);
     }
-    const ref = doc(db, "pruebas_premium", String(user.id_usuario));
-    getDoc(ref)
-      .then((snap) => {
-        if (snap.exists()) {
-          setTrialRecord(snap.data() as TrialRecord);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setCheckingTrial(false));
-  }, [user]);
+  };
 
-  const hasActiveTrial = !!trialRecord?.activa;
-  const trialEndDate = trialRecord?.fin
-    ? formatDate(trialRecord.fin.toDate())
-    : null;
-
-  const handleStartTrial = () => {
-    if (!token || !user) {
+  const handleActivatePlan = (planId: PaidPlanId) => {
+    if (!token) {
       Alert.alert(
         "Iniciá sesión",
-        "Necesitás una cuenta para activar la prueba gratuita.",
+        "Necesitás una cuenta para contratar un plan.",
         [{ text: "Entendido" }]
       );
       return;
     }
 
-    if (hasActiveTrial) return;
+    if (activePlanId === planId) return;
 
-    const confirmMessage =
-      Platform.OS === "web"
-        ? undefined
-        : "Tendrás 30 días de acceso completo al plan Aventurero sin cargo.";
+    const message =
+      planId === "premium"
+        ? "Tendrás 30 días de acceso completo al plan Aventurero sin cargo."
+        : "Vas a activar el plan Experto (sin pasarela de pago real todavía, es solo para probar el flujo).";
 
     if (Platform.OS === "web") {
-      void doActivateTrial();
+      void doActivatePlan(planId);
       return;
     }
 
     Alert.alert(
-      "Activar prueba gratuita",
-      confirmMessage!,
+      planId === "premium" ? "Activar prueba gratuita" : "Contratar plan Experto",
+      message,
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Activar", onPress: () => void doActivateTrial() },
+        { text: planId === "premium" ? "Activar" : "Contratar", onPress: () => void doActivatePlan(planId) },
       ]
     );
   };
 
-  const doActivateTrial = async () => {
-    if (!user) return;
-    setActivating(true);
-    try {
-      const now = new Date();
-      const end = addDays(now, 30);
-      const ref = doc(db, "pruebas_premium", String(user.id_usuario));
-      await setDoc(ref, {
-        id_usuario: user.id_usuario,
-        email: user.email,
-        plan: "premium",
-        inicio: serverTimestamp(),
-        fin: Timestamp.fromDate(end),
-        activa: true,
-      });
-      setTrialRecord({ activa: true, fin: Timestamp.fromDate(end) });
-    } catch {
-      Alert.alert("Error", "No se pudo activar la prueba. Intentá de nuevo.");
-    } finally {
-      setActivating(false);
-    }
-  };
-
-  const doCancelTrial = async () => {
-    if (!user) return;
+  const doCancelSubscription = async () => {
     setCancelling(true);
     try {
-      const ref = doc(db, "pruebas_premium", String(user.id_usuario));
-      await updateDoc(ref, { activa: false });
-      setTrialRecord((prev) => (prev ? { ...prev, activa: false } : prev));
+      await cancel();
     } catch {
       Alert.alert("Error", "No se pudo finalizar la suscripción. Intentá de nuevo.");
     } finally {
@@ -140,17 +100,17 @@ export default function PlansScreen() {
     }
   };
 
-  const handleCancelTrial = () => {
+  const handleCancelSubscription = () => {
     if (Platform.OS === "web") {
       setShowCancelModal(true);
       return;
     }
     Alert.alert(
       "Finalizar suscripción",
-      "Vas a perder el acceso al plan Aventurero de inmediato. ¿Querés continuar?",
+      `Vas a perder el acceso al plan ${activePlanId ? PLAN_NAME[activePlanId] : ""} de inmediato. ¿Querés continuar?`,
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Finalizar", style: "destructive", onPress: () => void doCancelTrial() },
+        { text: "Finalizar", style: "destructive", onPress: () => void doCancelSubscription() },
       ]
     );
   };
@@ -159,9 +119,13 @@ export default function PlansScreen() {
     if (planId === "free") {
       return { label: "Tu plan actual", disabled: true, variant: "disabled" as const };
     }
+    if (checkingSubscription) {
+      return { label: "Cargando...", disabled: true, variant: "disabled" as const };
+    }
+    if (activePlanId === planId) {
+      return { label: "Plan activo", disabled: true, variant: "disabled" as const };
+    }
     if (planId === "premium") {
-      if (checkingTrial) return { label: "Cargando...", disabled: true, variant: "disabled" as const };
-      if (hasActiveTrial) return { label: "Prueba activa", disabled: true, variant: "disabled" as const };
       return { label: "Comenzar prueba gratuita", disabled: false, variant: "primary" as const };
     }
     return { label: "Contratar", disabled: false, variant: "secondary" as const };
@@ -183,30 +147,32 @@ export default function PlansScreen() {
           </Text>
         </View>
 
-        {/* Trial active banner */}
+        {/* Active subscription banner */}
         {showCancelModal && (
           <AppDialog
             title="Finalizar suscripción"
-            message="Vas a perder el acceso al plan Aventurero de inmediato. ¿Querés continuar?"
+            message={`Vas a perder el acceso al plan ${activePlanId ? PLAN_NAME[activePlanId] : ""} de inmediato. ¿Querés continuar?`}
             icon="warning-outline"
             variant="danger"
             confirmLabel="Finalizar"
-            onConfirm={() => { setShowCancelModal(false); void doCancelTrial(); }}
+            onConfirm={() => { setShowCancelModal(false); void doCancelSubscription(); }}
             onCancel={() => setShowCancelModal(false)}
           />
         )}
-        {hasActiveTrial && trialEndDate && (
+        {hasActiveSubscription && activePlanId && (
           <View style={styles.successBanner}>
             <View style={styles.successIconWrap}>
               <Ionicons name="checkmark" size={22} color="#FFFFFF" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.successText}>¡Prueba gratuita activa!</Text>
+              <Text style={styles.successText}>¡Plan {PLAN_NAME[activePlanId]} activo!</Text>
               <Text style={styles.successSubtext}>
-                Tu acceso al plan Aventurero vence el {trialEndDate}.
+                {trialEndDate
+                  ? `Tu acceso vence el ${trialEndDate}.`
+                  : "Tu suscripción está activa."}
               </Text>
               <Pressable
-                onPress={handleCancelTrial}
+                onPress={handleCancelSubscription}
                 disabled={cancelling}
                 style={{ marginTop: 10, alignSelf: "flex-start" }}
               >
@@ -263,12 +229,16 @@ export default function PlansScreen() {
                   btn.variant === "primary" && styles.planButtonPrimary,
                   btn.variant === "secondary" && styles.planButtonSecondary,
                   btn.variant === "disabled" && styles.planButtonDisabled,
-                  (btn.disabled || activating) && { opacity: activating && plan.id === "premium" ? 0.7 : 1 },
+                  (btn.disabled || activatingPlan === plan.id) && { opacity: activatingPlan === plan.id ? 0.7 : 1 },
                 ]}
-                onPress={plan.id === "premium" ? handleStartTrial : undefined}
-                disabled={btn.disabled || activating}
+                onPress={
+                  plan.id === "premium" || plan.id === "pro"
+                    ? () => handleActivatePlan(plan.id as PaidPlanId)
+                    : undefined
+                }
+                disabled={btn.disabled || activatingPlan !== null}
               >
-                {activating && plan.id === "premium" ? (
+                {activatingPlan === plan.id ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Text
@@ -284,7 +254,7 @@ export default function PlansScreen() {
                 )}
               </Pressable>
 
-              {plan.id === "premium" && !hasActiveTrial && (
+              {plan.id === "premium" && activePlanId !== "premium" && (
                 <Text style={styles.trialNote}>
                   30 días gratis · Sin tarjeta de crédito
                 </Text>
