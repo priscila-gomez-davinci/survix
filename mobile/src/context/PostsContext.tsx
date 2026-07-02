@@ -70,7 +70,7 @@ export function PostsProvider({ children }: { children: ReactNode }) {
   };
 
   const addComment = async (postId: string, text: string) => {
-    const trimmed = text.trim();
+    const trimmed = text.trim().slice(0, 500);
     if (!trimmed) return;
     await postsApi.addComment(Number(postId), trimmed);
     // Reload the post to get the comment with server-assigned id and author

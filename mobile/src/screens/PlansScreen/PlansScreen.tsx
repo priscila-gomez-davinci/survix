@@ -10,9 +10,10 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "@/src/services/firebase";
 import { useAuth } from "@/src/context/AuthContext";
+import { AppDialog } from "@/src/components/AppDialog";
 import { PLANS, COMPARISON_FEATURES, type PlanId } from "@/src/data/plansData";
 import { styles } from "./PlansScreen.styles";
 
@@ -46,6 +47,8 @@ export default function PlansScreen() {
   const [trialRecord, setTrialRecord] = useState<TrialRecord | null>(null);
   const [checkingTrial, setCheckingTrial] = useState(true);
   const [activating, setActivating] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -123,6 +126,35 @@ export default function PlansScreen() {
     }
   };
 
+  const doCancelTrial = async () => {
+    if (!user) return;
+    setCancelling(true);
+    try {
+      const ref = doc(db, "pruebas_premium", String(user.id_usuario));
+      await updateDoc(ref, { activa: false });
+      setTrialRecord((prev) => (prev ? { ...prev, activa: false } : prev));
+    } catch {
+      Alert.alert("Error", "No se pudo finalizar la suscripción. Intentá de nuevo.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleCancelTrial = () => {
+    if (Platform.OS === "web") {
+      setShowCancelModal(true);
+      return;
+    }
+    Alert.alert(
+      "Finalizar suscripción",
+      "Vas a perder el acceso al plan Aventurero de inmediato. ¿Querés continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Finalizar", style: "destructive", onPress: () => void doCancelTrial() },
+      ]
+    );
+  };
+
   const getPlanButtonProps = (planId: PlanId) => {
     if (planId === "free") {
       return { label: "Tu plan actual", disabled: true, variant: "disabled" as const };
@@ -152,6 +184,17 @@ export default function PlansScreen() {
         </View>
 
         {/* Trial active banner */}
+        {showCancelModal && (
+          <AppDialog
+            title="Finalizar suscripción"
+            message="Vas a perder el acceso al plan Aventurero de inmediato. ¿Querés continuar?"
+            icon="warning-outline"
+            variant="danger"
+            confirmLabel="Finalizar"
+            onConfirm={() => { setShowCancelModal(false); void doCancelTrial(); }}
+            onCancel={() => setShowCancelModal(false)}
+          />
+        )}
         {hasActiveTrial && trialEndDate && (
           <View style={styles.successBanner}>
             <View style={styles.successIconWrap}>
@@ -162,6 +205,19 @@ export default function PlansScreen() {
               <Text style={styles.successSubtext}>
                 Tu acceso al plan Aventurero vence el {trialEndDate}.
               </Text>
+              <Pressable
+                onPress={handleCancelTrial}
+                disabled={cancelling}
+                style={{ marginTop: 10, alignSelf: "flex-start" }}
+              >
+                {cancelling ? (
+                  <ActivityIndicator size="small" color="#14342B" />
+                ) : (
+                  <Text style={{ color: "#14342B", fontWeight: "700", fontSize: 13, textDecorationLine: "underline" }}>
+                    Finalizar suscripción
+                  </Text>
+                )}
+              </Pressable>
             </View>
           </View>
         )}

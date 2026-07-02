@@ -62,7 +62,7 @@ function parseSubtitle(
 
 export default function DetailScreen() {
   const router = useRouter();
-  const { isAdmin, token } = useAuth();
+  const { isAdmin, token, user } = useAuth();
   const { refresh } = useHomeData();
 
   const params = useLocalSearchParams<{
@@ -293,12 +293,22 @@ export default function DetailScreen() {
     );
   };
 
+  const myReview = user ? reviews.find((r) => r.id_usuario === user.id_usuario) ?? null : null;
+
   const handleSubmitReview = async () => {
-    if (userRating === 0 || submittingReview) return;
+    if (userRating === 0 || submittingReview || myReview) return;
     setSubmittingReview(true);
     try {
-      const newReview = await routesApi.addReview(Number(params.id), userRating);
-      setReviews((prev) => [...prev, newReview]);
+      const id = Number(params.id);
+      await routesApi.addReview(id, userRating);
+      // Refetch from the backend instead of trusting the local append, so the
+      // UI always reflects what actually got persisted server-side.
+      const [revs, detail] = await Promise.all([
+        routesApi.getReviews(id),
+        routesApi.getDetail(id),
+      ]);
+      setReviews(revs);
+      setRouteDetail(detail);
       setUserRating(0);
     } catch {
       Alert.alert("Error", "No se pudo enviar la reseña. Intentá de nuevo.");
@@ -369,22 +379,6 @@ export default function DetailScreen() {
         <View style={styles.content}>
           <View style={styles.typeRow}>
             <Text style={styles.type}>{typeLabel}</Text>
-            {isAdmin && isBackendItem && !isEditing && Platform.OS !== "web" && (
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <Pressable
-                  style={{ backgroundColor: "#E8EDEB", borderRadius: 8, padding: 8 }}
-                  onPress={() => { setDraft({ ...displayed }); setIsEditing(true); }}
-                >
-                  <Ionicons name="pencil" size={16} color="#14342B" />
-                </Pressable>
-                <Pressable
-                  style={{ backgroundColor: "#FFE8E8", borderRadius: 8, padding: 8 }}
-                  onPress={handleDelete}
-                >
-                  <Ionicons name="trash" size={16} color="#D93025" />
-                </Pressable>
-              </View>
-            )}
           </View>
 
           {/* ── Edit mode ── */}
@@ -689,7 +683,24 @@ export default function DetailScreen() {
                       ))}
 
                       {/* Add review form */}
-                      {token && (
+                      {token && myReview && (
+                        <View style={styles.reviewForm}>
+                          <Text style={[styles.description, { fontWeight: "600", marginBottom: 8 }]}>
+                            Ya calificaste esta actividad
+                          </Text>
+                          <View style={{ flexDirection: "row", gap: 8 }}>
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Ionicons
+                                key={i}
+                                name={i <= myReview.puntaje ? "star" : "star-outline"}
+                                size={30}
+                                color="#F59E0B"
+                              />
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                      {token && !myReview && (
                         <View style={styles.reviewForm}>
                           <Text style={[styles.description, { fontWeight: "600", marginBottom: 8 }]}>
                             Tu calificación

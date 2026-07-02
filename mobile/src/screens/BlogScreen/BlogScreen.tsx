@@ -12,27 +12,43 @@ import {
   View,
 } from "react-native";
 import { usePostsContext } from "@/src/context/PostsContext";
+import { parsePostCategory, type PostMessageType } from "@/src/services/api";
 import { styles } from "./BlogScreen.styles";
 
 const ALL_CATEGORIES = "Todos";
+const COMMENT_MAX_LENGTH = 500;
+
+type TypeFilter = "all" | PostMessageType;
+
+const TYPE_TABS: { key: TypeFilter; label: string }[] = [
+  { key: "all", label: "Todas" },
+  { key: "suggestion", label: "Sugerencias" },
+  { key: "question", label: "Consultas" },
+];
 
 export default function BlogScreen() {
   const router = useRouter();
   const { posts: allPosts, loading, toggleLike, addComment } = usePostsContext();
   const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
+  const [activeType, setActiveType] = useState<TypeFilter>("all");
   const [draftComments, setDraftComments] = useState<Record<string, string>>({});
 
-  const categories = useMemo(
-    () => [ALL_CATEGORIES, ...Array.from(new Set(allPosts.map((p) => p.category)))],
+  const postsWithType = useMemo(
+    () => allPosts.map((p) => ({ ...p, ...parsePostCategory(p.category) })),
     [allPosts],
+  );
+
+  const categories = useMemo(
+    () => [ALL_CATEGORIES, ...Array.from(new Set(postsWithType.map((p) => p.label)))],
+    [postsWithType],
   );
 
   const visiblePosts = useMemo(
     () =>
-      activeCategory === ALL_CATEGORIES
-        ? allPosts
-        : allPosts.filter((p) => p.category === activeCategory),
-    [activeCategory, allPosts],
+      postsWithType
+        .filter((p) => activeType === "all" || p.type === activeType)
+        .filter((p) => activeCategory === ALL_CATEGORIES || p.label === activeCategory),
+    [activeCategory, activeType, postsWithType],
   );
 
   const communityPulse = useMemo(() => {
@@ -81,6 +97,22 @@ export default function BlogScreen() {
           </View>
         </View>
 
+        <View style={styles.typeTabRow}>
+          {TYPE_TABS.map((tab) => (
+            <Pressable
+              key={tab.key}
+              style={[styles.typeTab, activeType === tab.key && styles.typeTabActive]}
+              onPress={() => setActiveType(tab.key)}
+            >
+              <Text
+                style={[styles.typeTabText, activeType === tab.key && styles.typeTabTextActive]}
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -125,8 +157,27 @@ export default function BlogScreen() {
                   <Text style={styles.authorName}>{post.author}</Text>
                   <Text style={styles.authorRole}>{post.role}</Text>
                 </View>
+                {post.type && (
+                  <View
+                    style={[
+                      styles.typeBadge,
+                      post.type === "suggestion" ? styles.typeBadgeSuggestion : styles.typeBadgeQuestion,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.typeBadgeText,
+                        post.type === "suggestion"
+                          ? styles.typeBadgeTextSuggestion
+                          : styles.typeBadgeTextQuestion,
+                      ]}
+                    >
+                      {post.type === "suggestion" ? "Sugerencia" : "Consulta"}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.categoryPill}>
-                  <Text style={styles.categoryText}>{post.category}</Text>
+                  <Text style={styles.categoryText}>{post.label}</Text>
                 </View>
               </Pressable>
 
@@ -178,6 +229,14 @@ export default function BlogScreen() {
                 )}
               </View>
 
+              <Text
+                style={[
+                  styles.commentCounter,
+                  draft.length >= COMMENT_MAX_LENGTH && styles.commentCounterLimit,
+                ]}
+              >
+                {draft.length}/{COMMENT_MAX_LENGTH}
+              </Text>
               <View style={styles.commentComposer}>
                 <TextInput
                   value={draft}
@@ -187,6 +246,7 @@ export default function BlogScreen() {
                   placeholder="Escribe un comentario"
                   placeholderTextColor="#8A9490"
                   style={styles.commentInput}
+                  maxLength={COMMENT_MAX_LENGTH}
                 />
                 <Pressable style={styles.sendButton} onPress={() => handleAddComment(post.id)}>
                   <Ionicons name="send" size={16} color="#FFFFFF" />

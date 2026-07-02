@@ -10,9 +10,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { usePostsContext } from "@/src/context/PostsContext";
+import { buildPostCategory, type PostMessageType } from "@/src/services/api";
 import { styles } from "./ComposeScreen.styles";
-
-type MessageType = "suggestion" | "question";
 
 type MessageState = {
   title: string;
@@ -32,7 +31,7 @@ export default function ComposeScreen() {
   const router = useRouter();
   const { addPost } = usePostsContext();
   const [submitting, setSubmitting] = useState(false);
-  const [messageType, setMessageType] = useState<MessageType>("suggestion");
+  const [messageType, setMessageType] = useState<PostMessageType>("suggestion");
   const [form, setForm] = useState<MessageState>(initialState);
   const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
 
@@ -56,7 +55,7 @@ export default function ComposeScreen() {
       await addPost({
         titulo: form.title.trim(),
         contenido: form.body.trim(),
-        categoria: form.category.trim() || "General",
+        categoria: buildPostCategory(messageType, form.category.trim() || "General"),
       });
       setForm(initialState);
       router.push("/blog");

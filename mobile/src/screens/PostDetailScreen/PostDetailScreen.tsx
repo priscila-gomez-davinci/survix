@@ -11,7 +11,10 @@ import {
   View,
 } from "react-native";
 import { usePostsContext } from "@/src/context/PostsContext";
+import { parsePostCategory } from "@/src/services/api";
 import { styles } from "./PostDetailScreen.styles";
+
+const COMMENT_MAX_LENGTH = 500;
 
 export default function PostDetailScreen() {
   const router = useRouter();
@@ -35,13 +38,14 @@ export default function PostDetailScreen() {
   }
 
   const handleSend = async () => {
-    const trimmed = draft.trim();
+    const trimmed = draft.trim().slice(0, COMMENT_MAX_LENGTH);
     if (!trimmed) return;
     setDraft("");
     await addComment(post.id, trimmed);
   };
 
   const initials = post.author.split(" ").map((w) => w[0]).join("");
+  const { type: postType, label: categoryLabel } = parsePostCategory(post.category);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -62,12 +66,33 @@ export default function PostDetailScreen() {
           <Image source={{ uri: post.image }} style={styles.heroImage} resizeMode="contain" />
         ) : (
           <View style={[styles.heroImage, styles.heroImagePlaceholder]}>
-            <Text style={styles.heroImageCategory}>{post.category}</Text>
+            <Text style={styles.heroImageCategory}>{categoryLabel}</Text>
           </View>
         )}
 
-        <View style={styles.categoryPill}>
-          <Text style={styles.categoryText}>{post.category}</Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {postType && (
+            <View
+              style={[
+                styles.typeBadge,
+                postType === "suggestion" ? styles.typeBadgeSuggestion : styles.typeBadgeQuestion,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.typeBadgeText,
+                  postType === "suggestion"
+                    ? styles.typeBadgeTextSuggestion
+                    : styles.typeBadgeTextQuestion,
+                ]}
+              >
+                {postType === "suggestion" ? "Sugerencia" : "Consulta"}
+              </Text>
+            </View>
+          )}
+          <View style={styles.categoryPill}>
+            <Text style={styles.categoryText}>{categoryLabel}</Text>
+          </View>
         </View>
 
         <Text style={styles.postTitle}>{post.title}</Text>
@@ -130,6 +155,14 @@ export default function PostDetailScreen() {
           ))
         )}
 
+        <Text
+          style={[
+            styles.commentCounter,
+            draft.length >= COMMENT_MAX_LENGTH && styles.commentCounterLimit,
+          ]}
+        >
+          {draft.length}/{COMMENT_MAX_LENGTH}
+        </Text>
         <View style={styles.commentComposer}>
           <TextInput
             value={draft}
@@ -138,6 +171,7 @@ export default function PostDetailScreen() {
             placeholderTextColor="#8A9490"
             style={styles.commentInput}
             multiline
+            maxLength={COMMENT_MAX_LENGTH}
           />
           <Pressable style={styles.sendButton} onPress={handleSend}>
             <Ionicons name="send" size={16} color="#FFFFFF" />

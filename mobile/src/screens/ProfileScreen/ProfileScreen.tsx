@@ -15,7 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { styles } from "./ProfileScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
-import { profilesApi, uploadImage, type Profile } from "@/src/services/api";
+import {
+  guidesApi,
+  postsApi,
+  profilesApi,
+  parsePostCategory,
+  uploadImage,
+  type Profile,
+} from "@/src/services/api";
 
 type ProfileForm = {
   name: string;
@@ -37,8 +44,14 @@ function profileToForm(profile: Profile | null, email: string): ProfileForm {
   };
 }
 
+type ProfileStats = {
+  savedGuides: number | null;
+  contributions: number | null;
+  openQuestions: number | null;
+};
+
 export default function ProfileScreen() {
-  const { user, isAdmin, setProfilePhoto } = useAuth();
+  const { user, isAdmin, setProfilePhoto, logout } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -49,6 +62,11 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [stats, setStats] = useState<ProfileStats>({
+    savedGuides: null,
+    contributions: null,
+    openQuestions: null,
+  });
 
   const handlePickPhoto = () => {
     if (Platform.OS !== "web") return;
@@ -95,6 +113,28 @@ export default function ProfileScreen() {
       .finally(() => setIsFetching(false));
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+    const fullName = [form.name, form.surname].filter(Boolean).join(" ").trim();
+
+    guidesApi
+      .listFavorites()
+      .then((favs) => setStats((s) => ({ ...s, savedGuides: favs.length })))
+      .catch(() => setStats((s) => ({ ...s, savedGuides: null })));
+
+    if (!fullName) return;
+    postsApi
+      .list()
+      .then((posts) => {
+        const mine = posts.filter((p) => p.author.trim() === fullName);
+        const openQuestions = mine.filter(
+          (p) => parsePostCategory(p.category).type === "question",
+        ).length;
+        setStats((s) => ({ ...s, contributions: mine.length, openQuestions }));
+      })
+      .catch(() => setStats((s) => ({ ...s, contributions: null, openQuestions: null })));
+  }, [user, form.name, form.surname]);
+
   const completion = useMemo(() => {
     const values = [form.name, form.surname, form.email, form.location, form.bio, form.photo_url];
     const filled = values.filter((v) => v.trim().length > 0).length;
@@ -138,6 +178,19 @@ export default function ProfileScreen() {
   const handleCancel = () => {
     setDraft(form);
     setIsEditing(false);
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Salir",
+        style: "destructive",
+        onPress: () => {
+          void logout().then(() => router.replace("/login"));
+        },
+      },
+    ]);
   };
 
   const visibleForm = isEditing ? draft : form;
@@ -320,15 +373,15 @@ export default function ProfileScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>{stats.contributions ?? "—"}</Text>
             <Text style={styles.statLabel}>aportes</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>{stats.savedGuides ?? "—"}</Text>
             <Text style={styles.statLabel}>guias guardadas</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>{stats.openQuestions ?? "—"}</Text>
             <Text style={styles.statLabel}>consultas abiertas</Text>
           </View>
         </View>
@@ -381,6 +434,20 @@ export default function ProfileScreen() {
             </Text>
             <Ionicons name="chevron-forward" size={16} color="#8A9490" />
           </Pressable>
+          {Platform.OS !== "web" && (
+            <>
+              <View style={{ height: 1, backgroundColor: "#EEF2F0", marginHorizontal: 16 }} />
+              <Pressable
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}
+                onPress={handleLogout}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#D93025" />
+                <Text style={{ color: "#D93025", fontSize: 14, fontWeight: "600", flex: 1 }}>
+                  Cerrar sesión
+                </Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
       </ScrollView>
