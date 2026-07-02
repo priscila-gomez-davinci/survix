@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { usePostsContext } from "@/src/context/PostsContext";
+import { useAuth } from "@/src/context/AuthContext";
 import { buildPostCategory, parsePostCategory, uploadImage, type PostMessageType } from "@/src/services/api";
 import { styles } from "./BlogScreen.styles";
 
@@ -29,7 +30,8 @@ const TYPE_TABS: { key: TypeFilter; label: string }[] = [
 
 export default function BlogScreen() {
   const router = useRouter();
-  const { posts: allPosts, loading, toggleLike, addComment, addPost } = usePostsContext();
+  const { posts: allPosts, loading, toggleLike, addComment, addPost, deletePost } = usePostsContext();
+  const { isAdmin, profileName } = useAuth();
 
   // Feed state
   const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
@@ -76,6 +78,27 @@ export default function BlogScreen() {
     if (!draft.trim()) return;
     setDraftComments((prev) => ({ ...prev, [postId]: "" }));
     await addComment(postId, draft);
+  };
+
+  const handleDeletePost = (postId: string) => {
+    Alert.alert(
+      "Eliminar publicación",
+      "¿Seguro que querés eliminar esta publicación? Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deletePost(postId);
+            } catch {
+              Alert.alert("Error", "No se pudo eliminar la publicación. Intentá de nuevo.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handlePickPhoto = () => {
@@ -251,6 +274,11 @@ export default function BlogScreen() {
                   <View style={styles.categoryPill}>
                     <Text style={styles.categoryText}>{post.label}</Text>
                   </View>
+                  {(isAdmin || (!!profileName && post.author.trim() === profileName.trim())) && (
+                    <Pressable hitSlop={8} onPress={() => handleDeletePost(post.id)}>
+                      <Ionicons name="trash-outline" size={18} color="#D93025" />
+                    </Pressable>
+                  )}
                 </Pressable>
 
                 {post.image ? (

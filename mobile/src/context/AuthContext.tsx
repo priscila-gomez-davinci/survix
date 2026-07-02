@@ -24,6 +24,11 @@ type AuthContextValue = {
   isLoading: boolean;
   profilePhoto: string | null;
   setProfilePhoto: (url: string | null) => void;
+  // Best-effort display name for the current user (nombre + apellido). The
+  // backend has no author id on posts/comments, so this is what's used to
+  // tell "my content" apart from everyone else's — see PostsContext.
+  profileName: string | null;
+  setProfileName: (name: string | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (firebase_uid: string, email: string, id_token?: string) => Promise<void>;
@@ -37,13 +42,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
 
-  const fetchProfilePhoto = async (userId: number) => {
+  const fetchProfile = async (userId: number) => {
     try {
       const p = await profilesApi.getById(userId);
       setProfilePhoto(p.foto_url ?? null);
+      const name = [p.nombre, p.apellido].filter(Boolean).join(" ").trim();
+      setProfileName(name || null);
     } catch {
       setProfilePhoto(null);
+      setProfileName(null);
     }
   };
 
@@ -53,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(null);
       setUser(null);
       setProfilePhoto(null);
+      setProfileName(null);
     });
   }, []);
 
@@ -64,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(stored);
           const me = await authApi.me();
           setUser(me);
-          await fetchProfilePhoto(me.id_usuario);
+          await fetchProfile(me.id_usuario);
         }
       } catch {
         await clearStoredToken();
@@ -80,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
-    await fetchProfilePhoto(me.id_usuario);
+    await fetchProfile(me.id_usuario);
   };
 
   const login = async (email: string, password: string) => {
@@ -89,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
-    await fetchProfilePhoto(me.id_usuario);
+    await fetchProfile(me.id_usuario);
   };
 
   const loginWithGoogle = async (firebase_uid: string, email: string, id_token?: string) => {
@@ -98,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     const me = await authApi.me();
     setUser(me);
-    await fetchProfilePhoto(me.id_usuario);
+    await fetchProfile(me.id_usuario);
   };
 
   const logout = async () => {
@@ -107,13 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     setProfilePhoto(null);
+    setProfileName(null);
   };
 
   const isAdmin = user?.role === "admin";
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAdmin, isLoading, profilePhoto, setProfilePhoto, login, register, loginWithGoogle, logout }}
+      value={{ user, token, isAdmin, isLoading, profilePhoto, setProfilePhoto, profileName, setProfileName, login, register, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>

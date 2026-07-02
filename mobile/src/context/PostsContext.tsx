@@ -8,6 +8,8 @@ type PostsContextValue = {
   addPost: (payload: PostCreatePayload) => Promise<void>;
   toggleLike: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
+  deleteComment: (postId: string, commentId: number) => Promise<void>;
 };
 
 const PostsContext = createContext<PostsContextValue | null>(null);
@@ -82,8 +84,36 @@ export function PostsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deletePost = async (postId: string) => {
+    const previous = posts;
+    setPosts((current) => current.filter((p) => p.id !== postId));
+    try {
+      await postsApi.delete(Number(postId));
+    } catch {
+      setPosts(previous);
+      throw new Error("No se pudo eliminar la publicación.");
+    }
+  };
+
+  const deleteComment = async (postId: string, commentId: number) => {
+    const previous = posts;
+    setPosts((current) =>
+      current.map((p) =>
+        p.id === postId ? { ...p, comments: p.comments.filter((c) => c.id !== commentId) } : p,
+      ),
+    );
+    try {
+      await postsApi.deleteComment(Number(postId), commentId);
+    } catch {
+      setPosts(previous);
+      throw new Error("No se pudo eliminar el comentario.");
+    }
+  };
+
   return (
-    <PostsContext.Provider value={{ posts, loading, addPost, toggleLike, addComment }}>
+    <PostsContext.Provider
+      value={{ posts, loading, addPost, toggleLike, addComment, deletePost, deleteComment }}
+    >
       {children}
     </PostsContext.Provider>
   );

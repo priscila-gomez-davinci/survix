@@ -54,7 +54,7 @@ type ProfileStats = {
 };
 
 export default function ProfileScreen() {
-  const { user, isAdmin, setProfilePhoto, logout } = useAuth();
+  const { user, isAdmin, setProfilePhoto, setProfileName, logout } = useAuth();
   const { record: subscription } = useSubscription();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -167,6 +167,7 @@ export default function ProfileScreen() {
         setForm(f);
         setDraft(f);
         setProfilePhoto(updated.foto_url ?? null);
+        setProfileName([updated.nombre, updated.apellido].filter(Boolean).join(" ").trim() || null);
         setIsEditing(false);
       } catch {
         Alert.alert("Error", "No se pudo guardar el perfil. Intentá de nuevo.");

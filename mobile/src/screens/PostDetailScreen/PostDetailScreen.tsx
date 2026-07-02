@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   Image,
   Pressable,
   SafeAreaView,
@@ -11,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { usePostsContext } from "@/src/context/PostsContext";
+import { useAuth } from "@/src/context/AuthContext";
 import { parsePostCategory } from "@/src/services/api";
 import { styles } from "./PostDetailScreen.styles";
 
@@ -19,10 +21,14 @@ const COMMENT_MAX_LENGTH = 500;
 export default function PostDetailScreen() {
   const router = useRouter();
   const { postId } = useLocalSearchParams<{ postId: string }>();
-  const { posts, toggleLike, addComment } = usePostsContext();
+  const { posts, toggleLike, addComment, deletePost, deleteComment } = usePostsContext();
+  const { isAdmin, profileName } = useAuth();
   const [draft, setDraft] = useState("");
 
   const post = posts.find((p) => p.id === postId);
+  // Best-effort ownership check — the backend has no author id on posts/comments.
+  const isMine = (author: string) =>
+    !!profileName && author.trim() === profileName.trim();
 
   if (!post) {
     return (
@@ -44,6 +50,51 @@ export default function PostDetailScreen() {
     await addComment(post.id, trimmed);
   };
 
+  const canDeletePost = isAdmin || isMine(post.author);
+
+  const handleDeletePost = () => {
+    Alert.alert(
+      "Eliminar publicación",
+      "¿Seguro que querés eliminar esta publicación? Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deletePost(post.id);
+              router.back();
+            } catch {
+              Alert.alert("Error", "No se pudo eliminar la publicación. Intentá de nuevo.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteComment = (commentId: number) => {
+    Alert.alert(
+      "Eliminar comentario",
+      "¿Seguro que querés eliminar este comentario?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteComment(post.id, commentId);
+            } catch {
+              Alert.alert("Error", "No se pudo eliminar el comentario. Intentá de nuevo.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const initials = post.author.split(" ").map((w) => w[0]).join("");
   const { type: postType, label: categoryLabel } = parsePostCategory(post.category);
 
@@ -54,6 +105,11 @@ export default function PostDetailScreen() {
           <Ionicons name="arrow-back" size={22} color="#14342B" />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>{post.title}</Text>
+        {canDeletePost && (
+          <Pressable style={styles.backButton} onPress={handleDeletePost}>
+            <Ionicons name="trash-outline" size={20} color="#D93025" />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
@@ -151,6 +207,14 @@ export default function PostDetailScreen() {
                 <Text style={styles.commentAuthor}>{comment.author}</Text>
                 <Text style={styles.commentText}>{comment.text}</Text>
               </View>
+              {(isAdmin || isMine(comment.author)) && (
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => handleDeleteComment(comment.id)}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#D93025" />
+                </Pressable>
+              )}
             </View>
           ))
         )}
