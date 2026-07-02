@@ -598,6 +598,11 @@ export const guidesApi = {
 
   removeFavorite: (id: number) =>
     request<void>(`/guides/${id}/favorite`, { method: "DELETE" }, true),
+
+  listFavorites: async (): Promise<Guide[]> => {
+    const raw = await request<_BackendGuide[]>(`/guides/favorites`, {}, true);
+    return raw.map(_mapGuide);
+  },
 };
 
 // ─── Posts ────────────────────────────────────────────────────────────────────
@@ -674,6 +679,31 @@ export type PostCreatePayload = {
   categoria: string;
   imagen_url?: string;
 };
+
+// ─── Post message type (sugerencia / consulta) ─────────────────────────────────
+// The backend has no dedicated column for this, so the type is encoded as a
+// prefix on the free-text `categoria` field (e.g. "Consulta · Agua potable").
+
+export type PostMessageType = "suggestion" | "question";
+
+const _POST_TYPE_LABEL: Record<PostMessageType, string> = {
+  suggestion: "Sugerencia",
+  question: "Consulta",
+};
+
+export function buildPostCategory(type: PostMessageType, categoria: string): string {
+  return `${_POST_TYPE_LABEL[type]} · ${categoria}`;
+}
+
+export function parsePostCategory(raw: string): { type: PostMessageType | null; label: string } {
+  for (const type of Object.keys(_POST_TYPE_LABEL) as PostMessageType[]) {
+    const prefix = `${_POST_TYPE_LABEL[type]} · `;
+    if (raw.startsWith(prefix)) {
+      return { type, label: raw.slice(prefix.length) };
+    }
+  }
+  return { type: null, label: raw };
+}
 
 export const postsApi = {
   list: async (): Promise<BlogPost[]> => {

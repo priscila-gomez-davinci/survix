@@ -204,6 +204,57 @@ export const styles = StyleSheet.create({
   filterChipTextActive: {
     color: "#FFFFFF",
   },
+  typeTabRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  typeTab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "#E8EDEB",
+    alignItems: "center",
+  },
+  typeTabActive: {
+    backgroundColor: "#14342B",
+  },
+  typeTabText: {
+    color: "#58716A",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  typeTabTextActive: {
+    color: "#FFFFFF",
+  },
+  typeBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  typeBadgeSuggestion: {
+    backgroundColor: "#E6F0FF",
+  },
+  typeBadgeQuestion: {
+    backgroundColor: "#FFF1DE",
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  typeBadgeTextSuggestion: {
+    color: "#1B4FA6",
+  },
+  typeBadgeTextQuestion: {
+    color: "#A65C1B",
+  },
+  commentCounter: {
+    color: "#8A9490",
+    fontSize: 12,
+    alignSelf: "flex-end",
+  },
+  commentCounterLimit: {
+    color: "#D93025",
+  },
 
   // ─── Web split layout ──────────────────────────────────────────────────────
   webLayout: {

@@ -63,6 +63,28 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  typeBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  typeBadgeSuggestion: {
+    backgroundColor: "#E6F0FF",
+  },
+  typeBadgeQuestion: {
+    backgroundColor: "#FFF1DE",
+  },
+  typeBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  typeBadgeTextSuggestion: {
+    color: "#1B4FA6",
+  },
+  typeBadgeTextQuestion: {
+    color: "#A65C1B",
+  },
   postTitle: {
     fontSize: 22,
     fontWeight: "800",
@@ -201,6 +223,15 @@ export const styles = StyleSheet.create({
     backgroundColor: "#14342B",
     alignItems: "center",
     justifyContent: "center",
+  },
+  commentCounter: {
+    color: "#8A9490",
+    fontSize: 12,
+    alignSelf: "flex-end",
+    marginTop: -6,
+  },
+  commentCounterLimit: {
+    color: "#D93025",
   },
   notFound: {
     flex: 1,
