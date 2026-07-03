@@ -50,6 +50,7 @@ export const styles = StyleSheet.create({
     color: "#6D7673",
   },
   content: {
+    flexGrow: 1,
     backgroundColor: "#F5F6F5",
     marginTop: -24,
     borderTopLeftRadius: 26,

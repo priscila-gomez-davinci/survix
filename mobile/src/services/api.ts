@@ -150,6 +150,13 @@ export type RouteReview = {
   puntaje: number;
 };
 
+export type GuideReview = {
+  id_resenia_guia: number;
+  id_guias_supervivencia: number;
+  id_usuario: number;
+  puntaje: number;
+};
+
 export type RouteDetailData = {
   route: {
     id_rutas: number;
@@ -559,6 +566,15 @@ export const guidesApi = {
 
   getSteps: (id: number) =>
     request<GuideStep[]>(`/guides/${id}/steps`),
+
+  getReviews: (id: number) =>
+    request<GuideReview[]>(`/guides/${id}/reviews`),
+
+  addReview: (id: number, puntaje: number) =>
+    request<GuideReview>(`/guides/${id}/reviews`, {
+      method: "POST",
+      body: JSON.stringify({ puntaje }),
+    }, true),
 
   getProducts: (id: number) =>
     request<GuideProduct[]>(`/guides/${id}/products`),

@@ -18,7 +18,7 @@ import type { PurchaseLink } from "@/src/data/homeData";
 import { styles } from "./DetailScreen.styles";
 import { useAuth } from "@/src/context/AuthContext";
 import { useHomeData } from "@/src/context/HomeDataContext";
-import { routesApi, guidesApi, ApiError, type GuideStep, type GuideProduct, type RouteReview, type RouteDetailData, type RoutePoint } from "@/src/services/api";
+import { routesApi, guidesApi, ApiError, type GuideStep, type GuideProduct, type RouteDetailData, type RoutePoint } from "@/src/services/api";
 import RouteMap from "@/src/components/RouteMap";
 
 type FavoriteStatus = "idle" | "saving";
@@ -35,6 +35,15 @@ type EditErrors = {
   title?: string;
   distancia?: string;
   duracion?: string;
+};
+
+// Reviews come back from the backend shaped differently for routes
+// (id_resenia_ruta) vs guides (id_resenia_guia) — normalize both to this
+// shape so the rest of the screen doesn't need to branch on type.
+type NormalizedReview = {
+  id: number;
+  id_usuario: number;
+  puntaje: number;
 };
 
 function ratingLabel(r: number) {
@@ -110,7 +119,7 @@ export default function DetailScreen() {
 
   // ─── Route-specific data ──────────────────────────────────────────────────
   const [routeDetail, setRouteDetail] = useState<RouteDetailData | null>(null);
-  const [reviews, setReviews] = useState<RouteReview[]>([]);
+  const [reviews, setReviews] = useState<NormalizedReview[]>([]);
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const [userRating, setUserRating] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -121,10 +130,11 @@ export default function DetailScreen() {
     setExtraLoading(true);
 
     if (params.type === "guide") {
-      Promise.all([guidesApi.getSteps(id), guidesApi.getProducts(id)])
-        .then(([s, p]) => {
+      Promise.all([guidesApi.getSteps(id), guidesApi.getProducts(id), guidesApi.getReviews(id)])
+        .then(([s, p, revs]) => {
           setSteps(s.sort((a, b) => a.order - b.order));
           setProducts(p);
+          setReviews(revs.map((r) => ({ id: r.id_resenia_guia, id_usuario: r.id_usuario, puntaje: r.puntaje })));
         })
         .catch(() => {})
         .finally(() => setExtraLoading(false));
@@ -139,7 +149,7 @@ export default function DetailScreen() {
       ])
         .then(([detail, revs, pts]) => {
           setRouteDetail(detail);
-          setReviews(revs);
+          setReviews(revs.map((r) => ({ id: r.id_resenia_ruta, id_usuario: r.id_usuario, puntaje: r.puntaje })));
           setRoutePoints(pts);
         })
         .catch(() => {})
@@ -300,15 +310,21 @@ export default function DetailScreen() {
     setSubmittingReview(true);
     try {
       const id = Number(params.id);
-      await routesApi.addReview(id, userRating);
       // Refetch from the backend instead of trusting the local append, so the
       // UI always reflects what actually got persisted server-side.
-      const [revs, detail] = await Promise.all([
-        routesApi.getReviews(id),
-        routesApi.getDetail(id),
-      ]);
-      setReviews(revs);
-      setRouteDetail(detail);
+      if (params.type === "guide") {
+        await guidesApi.addReview(id, userRating);
+        const revs = await guidesApi.getReviews(id);
+        setReviews(revs.map((r) => ({ id: r.id_resenia_guia, id_usuario: r.id_usuario, puntaje: r.puntaje })));
+      } else {
+        await routesApi.addReview(id, userRating);
+        const [revs, detail] = await Promise.all([
+          routesApi.getReviews(id),
+          routesApi.getDetail(id),
+        ]);
+        setReviews(revs.map((r) => ({ id: r.id_resenia_ruta, id_usuario: r.id_usuario, puntaje: r.puntaje })));
+        setRouteDetail(detail);
+      }
       setUserRating(0);
     } catch {
       Alert.alert("Error", "No se pudo enviar la reseña. Intentá de nuevo.");
@@ -320,7 +336,7 @@ export default function DetailScreen() {
   const avgRating =
     reviews.length > 0
       ? reviews.reduce((sum, r) => sum + r.puntaje, 0) / reviews.length
-      : (routeDetail?.rating_avg ?? null);
+      : params.type === "activity" ? (routeDetail?.rating_avg ?? null) : null;
 
   // ─── Render helpers ───────────────────────────────────────────────────────
   const typeLabel =
@@ -339,7 +355,7 @@ export default function DetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
         {/* ── Hero image ── */}
         <View style={styles.imageWrapper}>
           <Image source={{ uri: params.image }} style={styles.image} />
@@ -365,7 +381,7 @@ export default function DetailScreen() {
             </View>
           )}
 
-          {params.type === "activity" && avgRating !== null && (
+          {(params.type === "activity" || params.type === "guide") && avgRating !== null && (
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={14} color="#F59E0B" />
               <Text style={styles.ratingBadgeValue}>{avgRating.toFixed(1)}</Text>
@@ -638,7 +654,7 @@ export default function DetailScreen() {
               )}
 
               {/* ── Reviews section ── */}
-              {params.type === "activity" && isBackendItem && (
+              {(params.type === "activity" || params.type === "guide") && isBackendItem && (
                 <>
                   <Text style={styles.sectionTitle}>Reseñas</Text>
 
@@ -668,7 +684,7 @@ export default function DetailScreen() {
                         </Text>
                       )}
                       {reviews.map((r) => (
-                        <View key={r.id_resenia_ruta} style={styles.reviewCard}>
+                        <View key={r.id} style={styles.reviewCard}>
                           <View style={{ flexDirection: "row", gap: 3 }}>
                             {[1, 2, 3, 4, 5].map((i) => (
                               <Ionicons

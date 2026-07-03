@@ -71,9 +71,35 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: "#76E2B3",
   },
+  ratingBadge: {
+    position: "absolute",
+    bottom: 44,
+    right: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  ratingBadgeValue: {
+    fontWeight: "800",
+    fontSize: 16,
+    color: "#14342B",
+  },
+  ratingBadgeLabel: {
+    fontSize: 13,
+    color: "#6D7673",
+  },
 
   // ─── Content card ─────────────────────────────────────────────────────────
   content: {
+    flexGrow: 1,
     backgroundColor: "#F5F6F5",
     marginTop: -24,
     borderTopLeftRadius: 26,
@@ -264,6 +290,73 @@ export const styles = StyleSheet.create({
   productUrl: {
     fontSize: 12,
     color: "#8A9490",
+  },
+
+  // ─── Reviews (Despegar-style rating badge) ────────────────────────────────
+  ratingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  scoreBadge: {
+    backgroundColor: "#14342B",
+    borderRadius: 10,
+    width: 54,
+    height: 54,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scoreValue: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  scoreLabel: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#14342B",
+  },
+  reviewCount: {
+    fontSize: 13,
+    color: "#8A9490",
+    marginTop: 3,
+  },
+  reviewCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  reviewForm: {
+    marginTop: 14,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E8EEEB",
+  },
+  reviewSubmitBtn: {
+    backgroundColor: "#14342B",
+    height: 46,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  reviewSubmitBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   // ─── Empty / loading ──────────────────────────────────────────────────────
