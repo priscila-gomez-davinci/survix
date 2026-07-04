@@ -130,6 +130,9 @@ export default function DetailScreen() {
     setExtraLoading(true);
 
     if (params.type === "guide") {
+      if (token) {
+        guidesApi.checkFavorite(id).then((r) => setFavorited(r.is_favorited)).catch(() => {});
+      }
       Promise.all([guidesApi.getSteps(id), guidesApi.getProducts(id), guidesApi.getReviews(id)])
         .then(([s, p, revs]) => {
           setSteps(s.sort((a, b) => a.order - b.order));
@@ -310,22 +313,30 @@ export default function DetailScreen() {
     setSubmittingReview(true);
     try {
       const id = Number(params.id);
-      // Refetch from the backend instead of trusting the local append, so the
-      // UI always reflects what actually got persisted server-side.
       if (params.type === "guide") {
         await guidesApi.addReview(id, userRating);
-        const revs = await guidesApi.getReviews(id);
-        setReviews(revs.map((r) => ({ id: r.id_resenia_guia, id_usuario: r.id_usuario, puntaje: r.puntaje })));
       } else {
         await routesApi.addReview(id, userRating);
-        const [revs, detail] = await Promise.all([
-          routesApi.getReviews(id),
-          routesApi.getDetail(id),
-        ]);
-        setReviews(revs.map((r) => ({ id: r.id_resenia_ruta, id_usuario: r.id_usuario, puntaje: r.puntaje })));
-        setRouteDetail(detail);
       }
       setUserRating(0);
+
+      // Refetch from the backend instead of trusting the local append, so the
+      // UI reflects what actually got persisted server-side. This is best-effort:
+      // the review was already saved above, so a refresh failure here shouldn't
+      // surface as "the review failed to submit".
+      try {
+        if (params.type === "guide") {
+          const revs = await guidesApi.getReviews(id);
+          setReviews(revs.map((r) => ({ id: r.id_resenia_guia, id_usuario: r.id_usuario, puntaje: r.puntaje })));
+        } else {
+          const [revs, detail] = await Promise.all([
+            routesApi.getReviews(id),
+            routesApi.getDetail(id),
+          ]);
+          setReviews(revs.map((r) => ({ id: r.id_resenia_ruta, id_usuario: r.id_usuario, puntaje: r.puntaje })));
+          setRouteDetail(detail);
+        }
+      } catch {}
     } catch {
       Alert.alert("Error", "No se pudo enviar la reseña. Intentá de nuevo.");
     } finally {

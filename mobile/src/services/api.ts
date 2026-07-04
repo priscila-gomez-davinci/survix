@@ -609,6 +609,9 @@ export const guidesApi = {
       body: JSON.stringify({ url }),
     }, true),
 
+  checkFavorite: (id: number) =>
+    request<{ is_favorited: boolean }>(`/guides/${id}/favorite`, {}, true),
+
   addFavorite: (id: number) =>
     request<void>(`/guides/${id}/favorite`, { method: "POST" }, true),
 
