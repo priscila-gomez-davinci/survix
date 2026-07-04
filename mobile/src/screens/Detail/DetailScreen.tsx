@@ -145,16 +145,15 @@ export default function DetailScreen() {
       if (token) {
         routesApi.checkFavorite(id).then((r) => setFavorited(r.is_favorited)).catch(() => {});
       }
-      Promise.all([
-        routesApi.getDetail(id),
-        routesApi.getReviews(id),
-        routesApi.getPoints(id),
-      ])
-        .then(([detail, revs, pts]) => {
-          setRouteDetail(detail);
-          setReviews(revs.map((r) => ({ id: r.id_resenia_ruta, id_usuario: r.id_usuario, puntaje: r.puntaje })));
-          setRoutePoints(pts);
-        })
+      // Fetched independently: one endpoint failing (e.g. an activity with no
+      // recorded route points) must not wipe out data the others already got,
+      // like reviews.
+      routesApi.getDetail(id).then(setRouteDetail).catch(() => {});
+      routesApi.getReviews(id)
+        .then((revs) => setReviews(revs.map((r) => ({ id: r.id_resenia_ruta, id_usuario: r.id_usuario, puntaje: r.puntaje }))))
+        .catch(() => {});
+      routesApi.getPoints(id)
+        .then(setRoutePoints)
         .catch(() => {})
         .finally(() => setExtraLoading(false));
     } else {
@@ -313,17 +312,23 @@ export default function DetailScreen() {
     setSubmittingReview(true);
     try {
       const id = Number(params.id);
+      // Apply the backend's response to local state immediately, instead of
+      // waiting on a refetch to learn "you've already reviewed this". If a
+      // refetch below fails, the UI must still know the submission went
+      // through — otherwise the form stays open and the user resubmits,
+      // creating duplicate reviews server-side (this is why activity ratings
+      // looked like they "didn't persist": every retry was actually a new row).
       if (params.type === "guide") {
-        await guidesApi.addReview(id, userRating);
+        const created = await guidesApi.addReview(id, userRating);
+        setReviews((prev) => [...prev, { id: created.id_resenia_guia, id_usuario: created.id_usuario, puntaje: created.puntaje }]);
       } else {
-        await routesApi.addReview(id, userRating);
+        const created = await routesApi.addReview(id, userRating);
+        setReviews((prev) => [...prev, { id: created.id_resenia_ruta, id_usuario: created.id_usuario, puntaje: created.puntaje }]);
       }
       setUserRating(0);
 
-      // Refetch from the backend instead of trusting the local append, so the
-      // UI reflects what actually got persisted server-side. This is best-effort:
-      // the review was already saved above, so a refresh failure here shouldn't
-      // surface as "the review failed to submit".
+      // Best-effort sync with the backend afterwards; a failure here is silent
+      // since the local state above already reflects the successful submission.
       try {
         if (params.type === "guide") {
           const revs = await guidesApi.getReviews(id);
