@@ -33,7 +33,7 @@ export const PLANS: Plan[] = [
     features: [
       "Rutas y mapas básicos",
       "Tips de supervivencia básicos",
-      "Blog de la comunidad",
+      "Comunidad",
       "Hasta 5 favoritos",
     ],
   },
@@ -78,7 +78,7 @@ export const PLANS: Plan[] = [
 export const COMPARISON_FEATURES: ComparisonFeature[] = [
   { label: "Rutas y mapas",           free: true,        premium: true,       pro: true },
   { label: "Tips de supervivencia",   free: "Básicos",   premium: "Completos", pro: "Completos" },
-  { label: "Blog de comunidad",        free: true,        premium: true,       pro: true },
+  { label: "Comunidad",                 free: true,        premium: true,       pro: true },
   { label: "Mapas sin conexión",       free: false,       premium: true,       pro: true },
   { label: "Descarga de rutas",        free: false,       premium: true,       pro: true },
   { label: "Favoritos",                free: "Hasta 5",   premium: "Ilimitados", pro: "Ilimitados" },

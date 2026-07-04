@@ -16,6 +16,7 @@
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0C2415",
         "foregroundImage": "./assets/icon.png"
@@ -25,7 +26,7 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "com.pfeuersturm.mobile" }],
+          "data": [{ "scheme": "survix" }],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]

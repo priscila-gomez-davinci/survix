@@ -104,7 +104,7 @@ export default function BlogScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroCard}>
-          <Text style={styles.heroEyebrow}>Blog de comunidad</Text>
+          <Text style={styles.heroEyebrow}>Comunidad</Text>
           <Text style={styles.heroTitle}>Ideas practicas para sobrevivencia cotidiana</Text>
           <Text style={styles.heroText}>
             Compartí tips, guías y consultas con la comunidad outdoor.

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "c19fd28d-77dd-4c0f-9df8-d1f4fdd2e2b8"
+      }
+    },
+    "android": {
+      "package": "com.scilafeuersturm.survix"
+    }
+  }
+}

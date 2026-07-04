@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "217762650105",
+    "project_id": "survix-2c666",
+    "storage_bucket": "survix-2c666.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217762650105:android:1813108952029118fa0f28",
+        "android_client_info": {
+          "package_name": "com.pfeuersturm.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "217762650105-hirdgoesamamndrvemif8s48a9ndnutu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC34gzZXuzbDa4kjOfvnC61CHN2LtWYmR4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "217762650105-hirdgoesamamndrvemif8s48a9ndnutu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
